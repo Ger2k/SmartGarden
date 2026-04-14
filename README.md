@@ -72,13 +72,14 @@ Leyenda:
 3. Base de datos por usuario: Parcial.
 - Firestore por usuario en `users/{uid}/plants|tasks|carePlans`.
 - Reglas de seguridad incluidas.
-- Tests de reglas añadidos con emulador (pendiente ejecutar localmente con JDK 21+).
+- Tests de reglas con emulador ejecutados y pasando.
 - Validaciones de payload reforzadas en servicios (plantas y tareas).
 
 4. Clima (Open-Meteo): Parcial.
 - Endpoint `/api/weather/forecast` con normalizacion y fallback.
 - Integrado en dashboard y generador de plan.
-- Falta observabilidad (logs/metricas), control de cuota/rate-limit y estrategia de cache mas robusta.
+- Observabilidad basica implementada (logs de fallback + señal visual en UI).
+- Pendiente control de cuota/rate-limit y estrategia de cache mas robusta.
 
 5. Operacion diaria (plantas, tareas, calendario): Parcial.
 - Alta/baja de plantas, tareas del dia, historial y calendario mes/semana.

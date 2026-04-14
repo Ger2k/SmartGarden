@@ -17,6 +17,14 @@ export default function WeatherCard({ weather, loading, error }: WeatherCardProp
           <p className="mt-2 text-2xl font-semibold">{weather.current.temp} C</p>
           <p className="text-sm text-slate-600">Humedad {weather.current.humidity}%</p>
           <p className="text-sm text-slate-600">{weather.current.description}</p>
+          <p className="mt-1 text-xs text-slate-500">
+            Fuente: {weather.source === 'fallback' ? 'Respaldo local' : 'Open-Meteo'}
+          </p>
+          {weather.source === 'fallback' ? (
+            <p className="mt-2 rounded-md bg-amber-50 px-2 py-1 text-xs text-amber-800">
+              Datos de respaldo activos ({weather.fallbackReason ?? 'motivo no especificado'}).
+            </p>
+          ) : null}
         </>
       ) : null}
     </article>

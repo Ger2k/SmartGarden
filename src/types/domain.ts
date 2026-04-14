@@ -43,6 +43,8 @@ export interface WeatherForecastDay {
 
 export interface WeatherSnapshot {
   fetchedAt: string;
+  source?: 'open-meteo' | 'fallback';
+  fallbackReason?: string;
   location: {
     lat: number;
     lon: number;

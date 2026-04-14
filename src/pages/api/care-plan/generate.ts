@@ -7,6 +7,8 @@ function fallbackWeather(lat: number, lon: number): WeatherSnapshot {
   const today = new Date().toISOString().slice(0, 10);
   return {
     fetchedAt: new Date().toISOString(),
+    source: 'fallback',
+    fallbackReason: 'care-plan-local-fallback',
     location: { lat, lon, city: 'Unknown' },
     current: { temp: 20, humidity: 60, description: 'fallback' },
     forecast: [

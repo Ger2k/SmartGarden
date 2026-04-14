@@ -20,6 +20,11 @@ export async function getForecast(lat: number, lon: number): Promise<WeatherSnap
   }
 
   const forecast = (await response.json()) as WeatherSnapshot;
+  if (forecast.source === 'fallback') {
+    console.warn(
+      `[weatherService] Usando fallback para ${lat.toFixed(3)},${lon.toFixed(3)} (${forecast.fallbackReason ?? 'sin-reason'})`
+    );
+  }
   cache.set(key, { expiresAt: Date.now() + ttlMs, value: forecast });
   return forecast;
 }

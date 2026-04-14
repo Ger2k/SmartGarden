@@ -58,6 +58,7 @@ function normalizeWeather(data: OpenMeteoPayload, lat: number, lon: number): Wea
 
   return {
     fetchedAt: new Date().toISOString(),
+    source: 'open-meteo',
     location: { lat, lon, city: 'Open-Meteo' },
     current: {
       temp: Number((data.current?.temperature_2m ?? forecast[0]?.tempMax ?? 20).toFixed(1)),
@@ -68,10 +69,12 @@ function normalizeWeather(data: OpenMeteoPayload, lat: number, lon: number): Wea
   };
 }
 
-function fallbackWeather(lat: number, lon: number): WeatherSnapshot {
+function fallbackWeather(lat: number, lon: number, reason: string): WeatherSnapshot {
   const today = new Date().toISOString().slice(0, 10);
   return {
     fetchedAt: new Date().toISOString(),
+    source: 'fallback',
+    fallbackReason: reason,
     location: { lat, lon, city: 'Unknown' },
     current: { temp: 20, humidity: 60, description: 'fallback' },
     forecast: [
@@ -100,13 +103,20 @@ export const GET: APIRoute = async ({ request }) => {
       `&timezone=auto&forecast_days=5`;
     const response = await fetch(endpoint);
     if (!response.ok) {
-      return new Response(JSON.stringify(fallbackWeather(lat, lon)), { status: 200 });
+      console.warn(`[weather] Open-Meteo status ${response.status}, usando fallback`);
+      return new Response(JSON.stringify(fallbackWeather(lat, lon, `upstream-status-${response.status}`)), { status: 200 });
     }
 
     const payload = (await response.json()) as OpenMeteoPayload;
+    if (!payload?.daily?.time?.length) {
+      console.warn('[weather] Payload invalido de Open-Meteo, usando fallback');
+      return new Response(JSON.stringify(fallbackWeather(lat, lon, 'invalid-payload')), { status: 200 });
+    }
+
     const normalized = normalizeWeather(payload, lat, lon);
     return new Response(JSON.stringify(normalized), { status: 200 });
-  } catch {
-    return new Response(JSON.stringify(fallbackWeather(lat, lon)), { status: 200 });
+  } catch (error) {
+    console.warn('[weather] Error consultando Open-Meteo, usando fallback', error);
+    return new Response(JSON.stringify(fallbackWeather(lat, lon, 'fetch-error')), { status: 200 });
   }
 };
