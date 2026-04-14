@@ -66,12 +66,14 @@ Leyenda:
 2. Autenticacion y sesion: Parcial.
 - Login Google y modo demo funcionando.
 - Middleware de rutas protegidas activo.
-- Falta endurecer seguridad de sesion (cookie `sg_auth` es simple, sin validacion server-side del token).
+- Validacion server-side de sesion Firebase implementada en middleware.
+- Pendiente mover validacion a flujo con Admin SDK/session cookies para entorno productivo estricto.
 
 3. Base de datos por usuario: Parcial.
 - Firestore por usuario en `users/{uid}/plants|tasks|carePlans`.
 - Reglas de seguridad incluidas.
-- Faltan pruebas de reglas y cierre de edge cases de integridad en actualizaciones complejas.
+- Tests de reglas añadidos con emulador (pendiente ejecutar localmente con JDK 21+).
+- Validaciones de payload reforzadas en servicios (plantas y tareas).
 
 4. Clima (OpenWeather): Parcial.
 - Endpoint `/api/weather/forecast` con normalizacion y fallback.
@@ -240,8 +242,14 @@ Todos los comandos se ejecutan en la raiz del proyecto:
 - `npm run preview`: previsualiza build local.
 - `npm run test`: ejecuta tests en modo watch.
 - `npm run test:run`: ejecuta tests una vez.
+- `npm run test:rules:run`: ejecuta tests de reglas (requiere emulador ya activo).
+- `npm run test:rules`: levanta emulador Firestore y ejecuta tests de reglas.
 - `npm run clean:vite`: limpia cache local de Vite (`node_modules/.vite`).
 - `npm run verify`: ejecuta validacion rapida (`test:run` + `build`).
+- `npm run verify:full`: ejecuta validacion completa (`verify` + `test:rules`).
+
+Requisito para pruebas de reglas:
+- JDK 21 o superior (firebase-tools ya no soporta versiones anteriores de Java).
 
 ## Protocolo Fase 0 (baseline de calidad)
 
