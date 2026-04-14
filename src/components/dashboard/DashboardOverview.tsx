@@ -34,6 +34,11 @@ export default function DashboardOverview({ plants, dailyTasks, tasks, latestPla
     monitoring: 'Monitoreo',
   };
 
+  const wateringToday = dailyTasks.filter((task) => task.type === 'watering' && task.status === 'pending');
+  const strongRainWarnings = wateringToday.filter((task) => task.weatherGuidance === 'skip_recommended').length;
+  const mildRainWarnings = wateringToday.filter((task) => task.weatherGuidance === 'suggest_postpone').length;
+  const noRainWarnings = wateringToday.filter((task) => !task.weatherGuidance || task.weatherGuidance === 'none').length;
+
   const getUrgency = (dueDate: string) => {
     const due = dayjs(dueDate).startOf('day');
     const today = dayjs().startOf('day');
@@ -90,6 +95,16 @@ export default function DashboardOverview({ plants, dailyTasks, tasks, latestPla
           ))}
           {!priorityTasks.length ? <li>No hay prioridades pendientes por ahora.</li> : null}
         </ul>
+      </article>
+
+      <article className="rounded-xl border border-emerald-200 bg-white p-4 md:col-span-3">
+        <p className="text-sm text-slate-500">Decision de riego hoy</p>
+        <div className="mt-2 grid gap-2 text-sm md:grid-cols-3">
+          <p className="rounded border border-rose-200 bg-rose-50 px-2 py-1 text-rose-700">No regar por lluvia: {strongRainWarnings}</p>
+          <p className="rounded border border-amber-200 bg-amber-50 px-2 py-1 text-amber-700">Evaluar posponer: {mildRainWarnings}</p>
+          <p className="rounded border border-emerald-200 bg-emerald-50 px-2 py-1 text-emerald-700">Riego normal: {noRainWarnings}</p>
+        </div>
+        {!wateringToday.length ? <p className="mt-2 text-sm text-slate-500">No hay tareas de riego pendientes para hoy.</p> : null}
       </article>
     </div>
   );

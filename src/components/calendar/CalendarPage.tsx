@@ -57,6 +57,24 @@ function taskStatusLabel(status: Task['status']) {
   return labels[status];
 }
 
+function taskPriorityLabel(priority: Task['priority']) {
+  if (priority === 'high') return 'Alta';
+  if (priority === 'low') return 'Baja';
+  return 'Media';
+}
+
+function taskPriorityClasses(priority: Task['priority']) {
+  if (priority === 'high') return 'bg-rose-100 text-rose-900';
+  if (priority === 'low') return 'bg-sky-100 text-sky-900';
+  return 'bg-amber-100 text-amber-900';
+}
+
+function weatherGuidanceLabel(guidance: Task['weatherGuidance']) {
+  if (guidance === 'skip_recommended') return 'No regar por lluvia';
+  if (guidance === 'suggest_postpone') return 'Podrias posponer por lluvia';
+  return 'Sin alerta de lluvia';
+}
+
 export default function CalendarPage() {
   const { user, loading, signOut } = useAuth();
   const { tasks, complete, skip } = useTasks(user?.uid);
@@ -89,6 +107,20 @@ export default function CalendarPage() {
   }, [currentDate, view]);
 
   const selectedTasks = useMemo(() => grouped.get(selectedDay) ?? [], [grouped, selectedDay]);
+
+  const selectedTasksOrdered = useMemo(() => {
+    const weight = (priority: Task['priority']) => {
+      if (priority === 'high') return 0;
+      if (priority === 'medium') return 1;
+      return 2;
+    };
+
+    return [...selectedTasks].sort((a, b) => {
+      const byPriority = weight(a.priority) - weight(b.priority);
+      if (byPriority !== 0) return byPriority;
+      return dayjs(a.dueDate).valueOf() - dayjs(b.dueDate).valueOf();
+    });
+  }, [selectedTasks]);
 
   const goPrev = () => {
     setCurrentDate((prev) => (view === 'month' ? prev.subtract(1, 'month') : prev.subtract(1, 'week')));
@@ -200,7 +232,7 @@ export default function CalendarPage() {
               </button>
               <ul className="mt-2 space-y-1">
                 {tasksOfDay.slice(0, 3).map((task) => (
-                  <li key={task.id} className="truncate rounded bg-emerald-100 px-2 py-1 text-xs text-emerald-900">
+                  <li key={task.id} className={`truncate rounded px-2 py-1 text-xs ${taskPriorityClasses(task.priority)}`}>
                     {taskTypeLabel(task.type)}
                   </li>
                 ))}
@@ -214,10 +246,13 @@ export default function CalendarPage() {
       <section className="mt-4 rounded-xl border border-emerald-200 bg-white p-4">
         <h3 className="text-lg font-semibold">Detalle del dia {dayjs(selectedDay).format('DD/MM/YYYY')}</h3>
         <ul className="mt-3 space-y-2">
-          {selectedTasks.map((task) => (
+          {selectedTasksOrdered.map((task) => (
             <li key={task.id} className="rounded-md border border-slate-200 px-3 py-2 text-sm">
               <p className="font-medium">{taskTypeLabel(task.type)}</p>
               <p className="text-slate-600">Estado: {taskStatusLabel(task.status)}</p>
+              <p className="text-slate-600">Prioridad: {taskPriorityLabel(task.priority)}</p>
+              {task.type === 'watering' ? <p className="text-slate-600">{weatherGuidanceLabel(task.weatherGuidance)}</p> : null}
+              {task.weatherReason ? <p className="text-slate-500">Motivo: {task.weatherReason}</p> : null}
               {task.completedAt ? (
                 <p className="text-slate-500">Completada: {dayjs(task.completedAt).format('DD/MM/YYYY HH:mm')}</p>
               ) : null}
@@ -241,7 +276,7 @@ export default function CalendarPage() {
               ) : null}
             </li>
           ))}
-          {!selectedTasks.length ? <li className="text-sm text-slate-500">No hay tareas en esta fecha.</li> : null}
+          {!selectedTasksOrdered.length ? <li className="text-sm text-slate-500">No hay tareas en esta fecha.</li> : null}
         </ul>
       </section>
     </AppShell>

@@ -12,6 +12,12 @@ export default function PlantManager() {
   const [plantTypeId, setPlantTypeId] = useState(plantTypes[0]?.id ?? '');
   const [nickname, setNickname] = useState('');
   const [newPlantingDate, setNewPlantingDate] = useState(dayjs().format('YYYY-MM-DD'));
+  const [newWateringMode, setNewWateringMode] = useState<Plant['wateringMode']>('auto');
+  const [newSpringDays, setNewSpringDays] = useState('');
+  const [newSummerDays, setNewSummerDays] = useState('');
+  const [newAutumnDays, setNewAutumnDays] = useState('');
+  const [newWinterDays, setNewWinterDays] = useState('');
+  const [newRainAlertLevel, setNewRainAlertLevel] = useState<Plant['rainAlertLevel']>('medium');
   const [editingPlantId, setEditingPlantId] = useState<string | null>(null);
   const [editNickname, setEditNickname] = useState('');
   const [editHealthStatus, setEditHealthStatus] = useState<Plant['healthStatus']>('Healthy');
@@ -38,6 +44,12 @@ export default function PlantManager() {
       plantTypeId,
       nickname,
       plantingDate,
+      wateringMode: newWateringMode,
+      wateringFrequencySpringDays: newSpringDays ? Number(newSpringDays) : undefined,
+      wateringFrequencySummerDays: newSummerDays ? Number(newSummerDays) : undefined,
+      wateringFrequencyAutumnDays: newAutumnDays ? Number(newAutumnDays) : undefined,
+      wateringFrequencyWinterDays: newWinterDays ? Number(newWinterDays) : undefined,
+      rainAlertLevel: newRainAlertLevel,
     });
 
     if (!parsed.success) {
@@ -48,6 +60,12 @@ export default function PlantManager() {
     try {
       await addPlant(parsed.data);
       setNickname('');
+      setNewWateringMode('auto');
+      setNewSpringDays('');
+      setNewSummerDays('');
+      setNewAutumnDays('');
+      setNewWinterDays('');
+      setNewRainAlertLevel('medium');
       setAddSuccess('Planta anadida correctamente.');
     } catch (error) {
       const message = error instanceof Error ? error.message : 'No se pudo anadir la planta.';
@@ -137,6 +155,72 @@ export default function PlantManager() {
           Anadir planta
         </button>
       </div>
+
+      <div className="mt-2 grid gap-2 md:grid-cols-3">
+        <select
+          value={newWateringMode ?? 'auto'}
+          onChange={(event) => setNewWateringMode(event.target.value as Plant['wateringMode'])}
+          className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+        >
+          <option value="auto">Riego automatico recomendado</option>
+          <option value="manual">Riego manual por temporada</option>
+        </select>
+
+        <select
+          value={newRainAlertLevel ?? 'medium'}
+          onChange={(event) => setNewRainAlertLevel(event.target.value as Plant['rainAlertLevel'])}
+          className="rounded-lg border border-slate-300 px-3 py-2 text-sm"
+        >
+          <option value="low">Lluvia: baja sensibilidad</option>
+          <option value="medium">Lluvia: sensibilidad media</option>
+          <option value="high">Lluvia: alta sensibilidad</option>
+        </select>
+
+        <p className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-800">
+          Consejo: en modo manual define cada cuantos dias regar segun temporada.
+        </p>
+      </div>
+
+      {newWateringMode === 'manual' ? (
+        <div className="mt-2 grid gap-2 md:grid-cols-4">
+          <input
+            type="number"
+            min={1}
+            max={30}
+            placeholder="Primavera (dias)"
+            value={newSpringDays}
+            onChange={(event) => setNewSpringDays(event.target.value)}
+            className="rounded border border-slate-300 px-2 py-1 text-sm"
+          />
+          <input
+            type="number"
+            min={1}
+            max={30}
+            placeholder="Verano (dias)"
+            value={newSummerDays}
+            onChange={(event) => setNewSummerDays(event.target.value)}
+            className="rounded border border-slate-300 px-2 py-1 text-sm"
+          />
+          <input
+            type="number"
+            min={1}
+            max={30}
+            placeholder="Otono (dias)"
+            value={newAutumnDays}
+            onChange={(event) => setNewAutumnDays(event.target.value)}
+            className="rounded border border-slate-300 px-2 py-1 text-sm"
+          />
+          <input
+            type="number"
+            min={1}
+            max={30}
+            placeholder="Invierno (dias)"
+            value={newWinterDays}
+            onChange={(event) => setNewWinterDays(event.target.value)}
+            className="rounded border border-slate-300 px-2 py-1 text-sm"
+          />
+        </div>
+      ) : null}
 
       {addError ? <p className="mt-2 text-sm text-rose-700">{addError}</p> : null}
       {addSuccess ? <p className="mt-2 text-sm text-emerald-700">{addSuccess}</p> : null}
