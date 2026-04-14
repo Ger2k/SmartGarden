@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
+import dayjs from 'dayjs';
 import plantTypes from '../../data/plants.json';
 import { useAuth } from '../../hooks/useAuth';
 import { usePlants } from '../../hooks/usePlants';
@@ -10,21 +11,23 @@ export default function PlantManager() {
   const { plants, addPlant, removePlant, editPlant, loading } = usePlants(user?.uid);
   const [plantTypeId, setPlantTypeId] = useState(plantTypes[0]?.id ?? '');
   const [nickname, setNickname] = useState('');
+  const [newPlantingDate, setNewPlantingDate] = useState(dayjs().format('YYYY-MM-DD'));
   const [editingPlantId, setEditingPlantId] = useState<string | null>(null);
   const [editNickname, setEditNickname] = useState('');
   const [editHealthStatus, setEditHealthStatus] = useState<Plant['healthStatus']>('Healthy');
   const [editPlantingDate, setEditPlantingDate] = useState('');
   const [addError, setAddError] = useState<string | null>(null);
+  const [addSuccess, setAddSuccess] = useState<string | null>(null);
   const healthLabels = {
     Healthy: 'Saludable',
     'Needs attention': 'Necesita atencion',
     'At risk': 'En riesgo',
   } as const;
 
-  const plantingDate = useMemo(() => new Date().toISOString(), []);
-
   const handleAdd = async () => {
     setAddError(null);
+    setAddSuccess(null);
+    const plantingDate = new Date(`${newPlantingDate}T00:00:00`).toISOString();
     const parsed = createPlantSchema.safeParse({
       plantTypeId,
       nickname,
@@ -39,6 +42,7 @@ export default function PlantManager() {
     try {
       await addPlant(parsed.data);
       setNickname('');
+      setAddSuccess('Planta anadida correctamente.');
     } catch (error) {
       const message = error instanceof Error ? error.message : 'No se pudo anadir la planta.';
       setAddError(message);
@@ -73,7 +77,7 @@ export default function PlantManager() {
     <section className="rounded-xl border border-emerald-200 bg-white p-4">
       <h3 className="text-lg font-semibold">Mis plantas</h3>
 
-      <div className="mt-4 grid gap-2 md:grid-cols-3">
+      <div className="mt-4 grid gap-2 md:grid-cols-4">
         <select
           value={plantTypeId}
           onChange={(event) => setPlantTypeId(event.target.value)}
@@ -93,6 +97,13 @@ export default function PlantManager() {
           className="rounded-lg border border-slate-300 px-3 py-2"
         />
 
+        <input
+          type="date"
+          value={newPlantingDate}
+          onChange={(event) => setNewPlantingDate(event.target.value)}
+          className="rounded-lg border border-slate-300 px-3 py-2"
+        />
+
         <button
           type="button"
           onClick={() => void handleAdd()}
@@ -104,6 +115,7 @@ export default function PlantManager() {
       </div>
 
       {addError ? <p className="mt-2 text-sm text-rose-700">{addError}</p> : null}
+      {addSuccess ? <p className="mt-2 text-sm text-emerald-700">{addSuccess}</p> : null}
 
       <ul className="mt-4 space-y-2">
         {plants.map((plant) => (
@@ -154,6 +166,7 @@ export default function PlantManager() {
                 <div>
                   <p className="font-medium">{plant.nickname || plant.plantTypeId}</p>
                   <p className="text-xs text-slate-500">Estado: {healthLabels[plant.healthStatus ?? 'Healthy']}</p>
+                  <p className="text-xs text-slate-500">Plantada: {dayjs(plant.plantingDate).format('DD/MM/YYYY')}</p>
                 </div>
                 <div className="flex gap-2">
                   <button

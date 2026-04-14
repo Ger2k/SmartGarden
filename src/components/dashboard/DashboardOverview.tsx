@@ -34,6 +34,18 @@ export default function DashboardOverview({ plants, dailyTasks, tasks, latestPla
     monitoring: 'Monitoreo',
   };
 
+  const getUrgency = (dueDate: string) => {
+    const due = dayjs(dueDate).startOf('day');
+    const today = dayjs().startOf('day');
+    if (due.isBefore(today)) {
+      return { label: 'Vencida', className: 'bg-rose-100 text-rose-700' };
+    }
+    if (due.isSame(today, 'day')) {
+      return { label: 'Hoy', className: 'bg-amber-100 text-amber-700' };
+    }
+    return { label: 'Proxima', className: 'bg-sky-100 text-sky-700' };
+  };
+
   return (
     <div className="grid gap-4 md:grid-cols-3">
       <article className="rounded-xl border border-emerald-200 bg-white p-4">
@@ -68,7 +80,12 @@ export default function DashboardOverview({ plants, dailyTasks, tasks, latestPla
         <ul className="mt-2 space-y-1 text-sm">
           {priorityTasks.map((task) => (
             <li key={task.id} className="rounded border border-slate-200 px-2 py-1">
-              {taskTypeLabels[task.type]} - vence {dayjs(task.dueDate).format('DD/MM/YYYY')}
+              <div className="flex items-center justify-between gap-2">
+                <span>{taskTypeLabels[task.type]} - vence {dayjs(task.dueDate).format('DD/MM/YYYY')}</span>
+                <span className={`rounded px-2 py-0.5 text-xs font-medium ${getUrgency(task.dueDate).className}`}>
+                  {getUrgency(task.dueDate).label}
+                </span>
+              </div>
             </li>
           ))}
           {!priorityTasks.length ? <li>No hay prioridades pendientes por ahora.</li> : null}
