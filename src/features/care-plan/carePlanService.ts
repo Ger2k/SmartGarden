@@ -2,6 +2,10 @@ import { addDoc, collection, getDocs, limit, orderBy, query } from 'firebase/fir
 import { db } from '../../services/firebase';
 import type { CarePlan } from '../../types/domain';
 
+function isDemoUser(userId: string): boolean {
+  return userId === 'demo-user';
+}
+
 function demoPlansKey(userId: string): string {
   return `sg_demo_plans_${userId}`;
 }
@@ -21,7 +25,7 @@ function writeDemoPlans(userId: string, plans: CarePlan[]) {
 }
 
 export async function saveCarePlan(plan: CarePlan): Promise<void> {
-  if (!db) {
+  if (!db || isDemoUser(plan.userId)) {
     const plans = readDemoPlans(plan.userId);
     writeDemoPlans(plan.userId, [plan, ...plans]);
     return;
@@ -32,7 +36,7 @@ export async function saveCarePlan(plan: CarePlan): Promise<void> {
 }
 
 export async function getLatestCarePlan(userId: string, plantId: string): Promise<CarePlan | null> {
-  if (!db) {
+  if (!db || isDemoUser(userId)) {
     const match = readDemoPlans(userId).find((plan) => plan.plantId === plantId);
     return match ?? null;
   }
@@ -47,7 +51,7 @@ export async function getLatestCarePlan(userId: string, plantId: string): Promis
 }
 
 export async function listCarePlans(userId: string): Promise<CarePlan[]> {
-  if (!db) {
+  if (!db || isDemoUser(userId)) {
     return readDemoPlans(userId).sort((a, b) => (a.generatedAt < b.generatedAt ? 1 : -1));
   }
 

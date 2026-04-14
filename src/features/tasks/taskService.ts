@@ -13,6 +13,10 @@ import { db } from '../../services/firebase';
 import type { Task } from '../../types/domain';
 import { createTaskSchema } from '../../utils/validation';
 
+function isDemoUser(userId: string): boolean {
+  return userId === 'demo-user';
+}
+
 function demoTasksKey(userId: string): string {
   return `sg_demo_tasks_${userId}`;
 }
@@ -42,7 +46,7 @@ function toIso(value: unknown): string {
 }
 
 export async function listTasks(userId: string): Promise<Task[]> {
-  if (!db) {
+  if (!db || isDemoUser(userId)) {
     return readDemoTasks(userId).sort((a, b) => (a.dueDate > b.dueDate ? 1 : -1));
   }
 
@@ -72,7 +76,7 @@ export async function createTask(task: Omit<Task, 'id'>): Promise<void> {
     throw new Error(`Task payload invalido: ${parsed.error.issues[0]?.message ?? 'error de validacion'}`);
   }
 
-  if (!db) {
+  if (!db || isDemoUser(parsed.data.userId)) {
     const tasks = readDemoTasks(parsed.data.userId);
     const next: Task = { ...parsed.data, id: makeId('task') };
     writeDemoTasks(parsed.data.userId, [...tasks, next]);
@@ -95,7 +99,7 @@ export async function createTasks(tasks: Array<Omit<Task, 'id'>>): Promise<void>
 }
 
 export async function completeTask(userId: string, taskId: string): Promise<void> {
-  if (!db) {
+  if (!db || isDemoUser(userId)) {
     const tasks = readDemoTasks(userId).map((task) =>
       task.id === taskId
         ? { ...task, status: 'completed', completedAt: new Date().toISOString(), updatedAt: new Date().toISOString() }
@@ -114,7 +118,7 @@ export async function completeTask(userId: string, taskId: string): Promise<void
 }
 
 export async function skipTask(userId: string, taskId: string): Promise<void> {
-  if (!db) {
+  if (!db || isDemoUser(userId)) {
     const tasks = readDemoTasks(userId).map((task) =>
       task.id === taskId ? { ...task, status: 'skipped', updatedAt: new Date().toISOString() } : task
     );

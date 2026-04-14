@@ -14,6 +14,10 @@ import { createPlantSchema, type CreatePlantInput, updatePlantSchema } from '../
 import type { Plant } from '../../types/domain';
 import { db } from '../../services/firebase';
 
+function isDemoUser(userId: string): boolean {
+  return userId === 'demo-user';
+}
+
 function demoPlantsKey(userId: string): string {
   return `sg_demo_plants_${userId}`;
 }
@@ -43,7 +47,7 @@ function toIso(value: unknown): string {
 }
 
 export async function listPlants(userId: string): Promise<Plant[]> {
-  if (!db) {
+  if (!db || isDemoUser(userId)) {
     return readDemoPlants(userId).sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
   }
 
@@ -72,7 +76,7 @@ export async function createPlant(userId: string, input: CreatePlantInput): Prom
     throw new Error(`Plant payload invalido: ${parsed.error.issues[0]?.message ?? 'error de validacion'}`);
   }
 
-  if (!db) {
+  if (!db || isDemoUser(userId)) {
     const now = new Date().toISOString();
     const plants = readDemoPlants(userId);
     const plant: Plant = {
@@ -110,7 +114,7 @@ export async function updatePlant(userId: string, plantId: string, patch: Partia
     throw new Error(`Plant patch invalido: ${parsed.error.issues[0]?.message ?? 'error de validacion'}`);
   }
 
-  if (!db) {
+  if (!db || isDemoUser(userId)) {
     const plants = readDemoPlants(userId);
     const next = plants.map((plant) =>
       plant.id === plantId ? { ...plant, ...parsed.data, updatedAt: new Date().toISOString() } : plant
@@ -132,7 +136,7 @@ export async function updatePlant(userId: string, plantId: string, patch: Partia
 }
 
 export async function deletePlant(userId: string, plantId: string): Promise<void> {
-  if (!db) {
+  if (!db || isDemoUser(userId)) {
     const plants = readDemoPlants(userId).filter((plant) => plant.id !== plantId);
     writeDemoPlants(userId, plants);
     return;

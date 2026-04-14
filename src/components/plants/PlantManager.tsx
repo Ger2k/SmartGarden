@@ -14,6 +14,7 @@ export default function PlantManager() {
   const [editNickname, setEditNickname] = useState('');
   const [editHealthStatus, setEditHealthStatus] = useState<Plant['healthStatus']>('Healthy');
   const [editPlantingDate, setEditPlantingDate] = useState('');
+  const [addError, setAddError] = useState<string | null>(null);
   const healthLabels = {
     Healthy: 'Saludable',
     'Needs attention': 'Necesita atencion',
@@ -23,15 +24,25 @@ export default function PlantManager() {
   const plantingDate = useMemo(() => new Date().toISOString(), []);
 
   const handleAdd = async () => {
+    setAddError(null);
     const parsed = createPlantSchema.safeParse({
       plantTypeId,
       nickname,
       plantingDate,
     });
 
-    if (!parsed.success) return;
-    await addPlant(parsed.data);
-    setNickname('');
+    if (!parsed.success) {
+      setAddError(parsed.error.issues[0]?.message ?? 'No se pudo validar la planta.');
+      return;
+    }
+
+    try {
+      await addPlant(parsed.data);
+      setNickname('');
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'No se pudo anadir la planta.';
+      setAddError(message);
+    }
   };
 
   const startEdit = (plant: Plant) => {
@@ -91,6 +102,8 @@ export default function PlantManager() {
           Anadir planta
         </button>
       </div>
+
+      {addError ? <p className="mt-2 text-sm text-rose-700">{addError}</p> : null}
 
       <ul className="mt-4 space-y-2">
         {plants.map((plant) => (
