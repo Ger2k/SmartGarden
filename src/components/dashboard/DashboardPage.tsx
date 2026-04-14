@@ -17,7 +17,7 @@ import PlantAnalytics from './PlantAnalytics';
 
 export default function DashboardPage() {
   const { user, loading, signOut } = useAuth();
-  const { plants } = usePlants(user?.uid);
+  const { plants, refresh: refreshPlants } = usePlants(user?.uid);
   const { tasks, dailyTasks, complete, skip, refresh } = useTasks(user?.uid);
   const [latestPlan, setLatestPlan] = useState<CarePlan | undefined>(undefined);
   const [carePlans, setCarePlans] = useState<CarePlan[]>([]);
@@ -46,6 +46,16 @@ export default function DashboardPage() {
       window.location.replace('/login');
     }
   }, [loading, user]);
+
+  const refreshCarePlans = async () => {
+    if (!user?.uid) return;
+    const plans = await listCarePlans(user.uid);
+    setCarePlans(plans);
+  };
+
+  const handlePlantChange = async () => {
+    await Promise.all([refreshPlants(), refresh(), refreshCarePlans()]);
+  };
 
   const handleSignOut = async () => {
     await signOut();
@@ -120,7 +130,7 @@ export default function DashboardPage() {
 
       <div className="mt-4 grid gap-4 md:grid-cols-2">
         <WeatherCard weather={weather} loading={weatherLoading} error={weatherError} />
-        <PlantManager />
+        <PlantManager onPlantChange={handlePlantChange} />
         <DailyTaskList tasks={tasks} onComplete={complete} onSkip={skip} />
         <TaskHistoryList tasks={tasks} />
       </div>

@@ -9,6 +9,8 @@ import {
   serverTimestamp,
   Timestamp,
   updateDoc,
+  where,
+  writeBatch,
 } from 'firebase/firestore';
 import { createPlantSchema, type CreatePlantInput, updatePlantSchema } from '../../utils/validation';
 import type { Plant } from '../../types/domain';
@@ -38,6 +40,7 @@ export async function listPlants(userId: string): Promise<Plant[]> {
       id: item.id,
       userId: String(data.userId ?? userId),
       plantTypeId: String(data.plantTypeId ?? ''),
+      perenualSpeciesId: typeof data.perenualSpeciesId === 'number' ? data.perenualSpeciesId : undefined,
       nickname: typeof data.nickname === 'string' ? data.nickname : undefined,
       plantingDate: toIso(data.plantingDate),
       wateringMode: data.wateringMode as Plant['wateringMode'],
@@ -98,7 +101,6 @@ export async function updatePlant(userId: string, plantId: string, patch: Partia
   for (const [key, value] of Object.entries(parsed.data)) {
     if (value !== undefined) {
       patchForDb[key] = value;
-      perenualSpeciesId: parsed.data.perenualSpeciesId ?? null,
     }
   }
   if (parsed.data.plantingDate) {
@@ -113,6 +115,22 @@ export async function updatePlant(userId: string, plantId: string, patch: Partia
 
 export async function deletePlant(userId: string, plantId: string): Promise<void> {
   const firestore = getDbOrThrow();
-  const ref = doc(firestore, 'users', userId, 'plants', plantId);
-  await deleteDoc(ref);
+  const batch = writeBatch(firestore);
+
+  const plantRef = doc(firestore, 'users', userId, 'plants', plantId);
+  batch.delete(plantRef);
+
+  const tasksRef = collection(firestore, 'users', userId, 'tasks');
+  const tasksSnapshot = await getDocs(query(tasksRef, where('plantId', '==', plantId)));
+  for (const taskDoc of tasksSnapshot.docs) {
+    batch.delete(taskDoc.ref);
+  }
+
+  const plansRef = collection(firestore, 'users', userId, 'carePlans');
+  const plansSnapshot = await getDocs(query(plansRef, where('plantId', '==', plantId)));
+  for (const planDoc of plansSnapshot.docs) {
+    batch.delete(planDoc.ref);
+  }
+
+  await batch.commit();
 }

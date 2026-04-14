@@ -11,7 +11,11 @@ type PlantOption = {
   perenualSpeciesId?: number;
 };
 
-export default function PlantManager() {
+type PlantManagerProps = {
+  onPlantChange?: () => Promise<void> | void;
+};
+
+export default function PlantManager({ onPlantChange }: PlantManagerProps) {
   const { user } = useAuth();
   const { plants, addPlant, removePlant, editPlant, loading } = usePlants(user?.uid);
   const [plantTypeId, setPlantTypeId] = useState('');
@@ -69,6 +73,7 @@ export default function PlantManager() {
 
     try {
       await addPlant(parsed.data);
+      await onPlantChange?.();
       setPlantTypeId('');
       setNewPerenualSpeciesId(undefined);
       setPlantSearch('');
@@ -155,7 +160,13 @@ export default function PlantManager() {
       wateringFrequencyWinterDays: editWinterDays ? Number(editWinterDays) : undefined,
       rainAlertLevel: editRainAlertLevel,
     });
+    await onPlantChange?.();
     cancelEdit();
+  };
+
+  const handleRemovePlant = async (plantId: string) => {
+    await removePlant(plantId);
+    await onPlantChange?.();
   };
 
   return (
@@ -404,7 +415,7 @@ export default function PlantManager() {
                   </button>
                   <button
                     type="button"
-                    onClick={() => void removePlant(plant.id)}
+                    onClick={() => void handleRemovePlant(plant.id)}
                     className="rounded bg-rose-600 px-3 py-1 text-sm text-white"
                   >
                     Eliminar
