@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import dayjs from 'dayjs';
 import 'dayjs/locale/es';
 import isoWeek from 'dayjs/plugin/isoWeek';
@@ -98,12 +98,23 @@ export default function CalendarPage() {
     setCurrentDate((prev) => (view === 'month' ? prev.add(1, 'month') : prev.add(1, 'week')));
   };
 
+  useEffect(() => {
+    if (!loading && !user) {
+      window.location.replace('/login');
+    }
+  }, [loading, user]);
+
+  const handleSignOut = async () => {
+    await signOut();
+    window.location.replace('/login');
+  };
+
   if (loading) {
     return <p className="p-6">Cargando sesion...</p>;
   }
 
   if (!user) {
-    return <p className="p-6">Inicia sesion en /login</p>;
+    return <p className="p-6">Redirigiendo a /login...</p>;
   }
 
   return (
@@ -153,7 +164,7 @@ export default function CalendarPage() {
 
         <p className="text-lg font-semibold capitalize">{periodLabel}</p>
 
-        <button type="button" onClick={() => void signOut()} className="rounded bg-slate-800 px-4 py-2 text-sm text-white">
+        <button type="button" onClick={() => void handleSignOut()} className="rounded bg-slate-800 px-4 py-2 text-sm text-white">
           Cerrar sesion
         </button>
       </div>

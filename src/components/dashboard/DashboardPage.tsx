@@ -41,6 +41,17 @@ export default function DashboardPage() {
     void loadPlans();
   }, [user?.uid]);
 
+  useEffect(() => {
+    if (!loading && !user) {
+      window.location.replace('/login');
+    }
+  }, [loading, user]);
+
+  const handleSignOut = async () => {
+    await signOut();
+    window.location.replace('/login');
+  };
+
   const handleGeneratePlan = async () => {
     const firstPlant = plants[0];
     if (!user || !firstPlant) return;
@@ -80,7 +91,7 @@ export default function DashboardPage() {
   }
 
   if (!user) {
-    return <p className="p-6">Inicia sesion en /login</p>;
+    return <p className="p-6">Redirigiendo a /login...</p>;
   }
 
   return (
@@ -94,7 +105,7 @@ export default function DashboardPage() {
         >
           {generatingPlan ? 'Generando...' : 'Generar plan de cuidado'}
         </button>
-        <button type="button" onClick={() => void signOut()} className="rounded bg-slate-800 px-4 py-2 text-sm text-white">
+        <button type="button" onClick={() => void handleSignOut()} className="rounded bg-slate-800 px-4 py-2 text-sm text-white">
           Cerrar sesion
         </button>
       </div>
