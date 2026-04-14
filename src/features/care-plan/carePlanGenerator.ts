@@ -95,14 +95,22 @@ export function generateCarePlan(input: {
   plantType: PlantType;
   weather: WeatherSnapshot;
   overdueCriticalTasks: number;
+  externalWateringEveryDays?: number;
 }): { plan: CarePlan; tasks: Omit<Task, 'id'>[] } {
   const now = isoNow();
   const rainSoon = forecastRainNextDays(input.weather, 2);
   const isHeatTrend = heatTrend(input.weather);
   const rainThresholdMm = resolveRainThreshold(input.plant.rainAlertLevel ?? 'medium');
 
-  let wateringEveryDays = input.plantType.wateringFrequencyDays;
+  let wateringEveryDays =
+    typeof input.externalWateringEveryDays === 'number' && input.externalWateringEveryDays > 0
+      ? input.externalWateringEveryDays
+      : input.plantType.wateringFrequencyDays;
   const decisionLog: string[] = [];
+
+  if (typeof input.externalWateringEveryDays === 'number' && input.externalWateringEveryDays > 0) {
+    decisionLog.push(`Frecuencia base obtenida de Perenual: cada ${input.externalWateringEveryDays} dias.`);
+  }
 
   const seasonalOverride = resolveSeasonalWateringDays(input.plant, now);
   if (typeof seasonalOverride === 'number' && seasonalOverride > 0) {

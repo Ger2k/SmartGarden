@@ -116,4 +116,18 @@ describe('carePlanGenerator', () => {
     expect(wateringTask?.weatherGuidance).toBe('suggest_postpone');
     expect(wateringTask?.priority).toBe('high');
   });
+
+  it('uses external watering frequency when provided by API source', () => {
+    const output = generateCarePlan({
+      userId: 'user_1',
+      plant: makePlant(),
+      plantType: makePlantType(),
+      weather: makeWeather([0, 0, 0], [25, 25, 25]),
+      overdueCriticalTasks: 0,
+      externalWateringEveryDays: 6,
+    });
+
+    expect(output.plan.wateringEveryDays).toBe(6);
+    expect(output.plan.decisionLog.some((line) => line.includes('Perenual'))).toBe(true);
+  });
 });

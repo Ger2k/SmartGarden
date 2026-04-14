@@ -226,8 +226,11 @@ Variables disponibles:
 - `PUBLIC_FIREBASE_STORAGE_BUCKET`
 - `PUBLIC_FIREBASE_MESSAGING_SENDER_ID`
 - `PUBLIC_FIREBASE_APP_ID`
+- `PERENUAL_API_KEY` (opcional, para obtener frecuencia de riego desde Perenual)
 
-Nota: si faltan variables de Firebase, la app no podra autenticarse ni acceder a Firestore.
+Notas:
+- Si faltan variables de Firebase, la app no podra autenticarse ni acceder a Firestore.
+- Si falta `PERENUAL_API_KEY`, el plan de cuidado usa la frecuencia de riego local definida en `plants.json`.
 
 ## Scripts
 

@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import plantTypes from '../../../data/plants.json';
 import { generateCarePlan } from '../../../features/care-plan/carePlanGenerator';
+import { getPerenualWateringFrequencyDays } from '../../../features/plants/perenualService';
 import type { Plant, PlantType, WeatherSnapshot } from '../../../types/domain';
 
 function fallbackWeather(lat: number, lon: number): WeatherSnapshot {
@@ -65,6 +66,7 @@ export const POST: APIRoute = async ({ request, fetch }) => {
       plantType,
       weather,
       overdueCriticalTasks: body.overdueCriticalTasks ?? 0,
+      externalWateringEveryDays: await getPerenualWateringFrequencyDays(plantType.name),
     });
 
     return new Response(JSON.stringify(output), { status: 200 });
