@@ -1,0 +1,32 @@
+[
+  {
+    "id": "tomato",
+    "name": "Tomate",
+    "wateringFrequencyDays": 2,
+    "harvestTimeDays": 80,
+    "sunlightNeeds": "high",
+    "season": "spring",
+    "idealTemperature": { "min": 18, "max": 30 },
+    "idealHumidity": { "min": 50, "max": 75 }
+  },
+  {
+    "id": "lettuce",
+    "name": "Lechuga",
+    "wateringFrequencyDays": 3,
+    "harvestTimeDays": 45,
+    "sunlightNeeds": "medium",
+    "season": "all",
+    "idealTemperature": { "min": 12, "max": 24 },
+    "idealHumidity": { "min": 55, "max": 80 }
+  },
+  {
+    "id": "basil",
+    "name": "Albahaca",
+    "wateringFrequencyDays": 2,
+    "harvestTimeDays": 60,
+    "sunlightNeeds": "high",
+    "season": "summer",
+    "idealTemperature": { "min": 18, "max": 32 },
+    "idealHumidity": { "min": 45, "max": 70 }
+  }
+]

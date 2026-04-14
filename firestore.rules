@@ -1,0 +1,85 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(uid) {
+      return isSignedIn() && request.auth.uid == uid;
+    }
+
+    function hasOnlyPlantKeys() {
+      return request.resource.data.keys().hasOnly([
+        'userId',
+        'plantTypeId',
+        'nickname',
+        'plantingDate',
+        'healthStatus',
+        'healthScore',
+        'createdAt',
+        'updatedAt'
+      ]);
+    }
+
+    function validPlant(uid) {
+      return hasOnlyPlantKeys()
+        && request.resource.data.userId == uid
+        && request.resource.data.plantTypeId is string
+        && request.resource.data.plantingDate is timestamp
+        && request.resource.data.healthStatus in ['Healthy', 'Needs attention', 'At risk']
+        && request.resource.data.healthScore is number;
+    }
+
+    function hasOnlyTaskKeys() {
+      return request.resource.data.keys().hasOnly([
+        'userId',
+        'plantId',
+        'carePlanId',
+        'type',
+        'dueDate',
+        'status',
+        'completedAt',
+        'createdAt',
+        'updatedAt'
+      ]);
+    }
+
+    function validTask(uid) {
+      return hasOnlyTaskKeys()
+        && request.resource.data.userId == uid
+        && request.resource.data.type in ['watering', 'harvest', 'monitoring']
+        && request.resource.data.status in ['pending', 'completed', 'skipped']
+        && request.resource.data.dueDate is timestamp
+        && (
+          request.resource.data.status != 'completed'
+          || request.resource.data.completedAt is timestamp
+        );
+    }
+
+    match /plantTypes/{plantTypeId} {
+      allow read: if true;
+      allow write: if false;
+    }
+
+    match /users/{uid} {
+      allow read, write: if isOwner(uid);
+
+      match /plants/{plantId} {
+        allow read: if isOwner(uid);
+        allow create, update: if isOwner(uid) && validPlant(uid);
+        allow delete: if isOwner(uid);
+      }
+
+      match /tasks/{taskId} {
+        allow read: if isOwner(uid);
+        allow create, update: if isOwner(uid) && validTask(uid);
+        allow delete: if isOwner(uid);
+      }
+
+      match /carePlans/{planId} {
+        allow read, create, update, delete: if isOwner(uid);
+      }
+    }
+  }
+}

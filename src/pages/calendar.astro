@@ -1,0 +1,8 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import CalendarPage from '../components/calendar/CalendarPage';
+---
+
+<BaseLayout title="Calendario | Smart Garden">
+  <CalendarPage client:only="react" />
+</BaseLayout>

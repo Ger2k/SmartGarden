@@ -1,0 +1,8 @@
+---
+import BaseLayout from '../layouts/BaseLayout.astro';
+import LoginCard from '../components/auth/LoginCard';
+---
+
+<BaseLayout title="Inicio de sesion | Smart Garden">
+  <LoginCard client:only="react" />
+</BaseLayout>
