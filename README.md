@@ -45,7 +45,7 @@ Aplicacion web para gestionar huertos y jardines de forma inteligente: seguimien
 - Frontend con Astro + React + Tailwind.
 - Rutas de aplicacion: inicio, login, dashboard, plantas, tareas y calendario.
 - Integracion de Firebase Auth + Firestore (con fallback local para demo).
-- Integracion de clima via OpenWeather.
+- Integracion de clima via Open-Meteo.
 - Reglas de seguridad de Firestore incluidas en el repo.
 - Tests unitarios para el generador de planes de cuidado.
 - Configuracion para despliegue SSR en Netlify.
@@ -75,7 +75,7 @@ Leyenda:
 - Tests de reglas añadidos con emulador (pendiente ejecutar localmente con JDK 21+).
 - Validaciones de payload reforzadas en servicios (plantas y tareas).
 
-4. Clima (OpenWeather): Parcial.
+4. Clima (Open-Meteo): Parcial.
 - Endpoint `/api/weather/forecast` con normalizacion y fallback.
 - Integrado en dashboard y generador de plan.
 - Falta observabilidad (logs/metricas), control de cuota/rate-limit y estrategia de cache mas robusta.
@@ -228,7 +228,6 @@ Variables disponibles:
 - `PUBLIC_FIREBASE_STORAGE_BUCKET`
 - `PUBLIC_FIREBASE_MESSAGING_SENDER_ID`
 - `PUBLIC_FIREBASE_APP_ID`
-- `OPENWEATHER_API_KEY`
 
 Nota: si faltan variables de Firebase, la app permite uso en modo demo con almacenamiento local.
 

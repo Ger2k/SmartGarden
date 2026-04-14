@@ -1,42 +1,68 @@
 import type { APIRoute } from 'astro';
 import type { WeatherSnapshot } from '../../../types/domain';
 
-function normalizeWeather(data: any, city: string, lat: number, lon: number): WeatherSnapshot {
-  const grouped = new Map<string, { tempMin: number; tempMax: number; humidity: number; rainMm: number }>();
+type OpenMeteoPayload = {
+  current?: {
+    temperature_2m?: number;
+    relative_humidity_2m?: number;
+    weather_code?: number;
+  };
+  daily?: {
+    time?: string[];
+    temperature_2m_min?: number[];
+    temperature_2m_max?: number[];
+    precipitation_sum?: number[];
+  };
+};
 
-  for (const item of data.list as any[]) {
-    const key = String(item.dt_txt).slice(0, 10);
-    const current = grouped.get(key) ?? {
-      tempMin: Number.POSITIVE_INFINITY,
-      tempMax: Number.NEGATIVE_INFINITY,
-      humidity: 0,
-      rainMm: 0,
-    };
+function weatherCodeDescription(code?: number): string {
+  const map: Record<number, string> = {
+    0: 'Despejado',
+    1: 'Mayormente despejado',
+    2: 'Parcialmente nublado',
+    3: 'Nublado',
+    45: 'Niebla',
+    48: 'Niebla escarchada',
+    51: 'Llovizna ligera',
+    53: 'Llovizna moderada',
+    55: 'Llovizna intensa',
+    61: 'Lluvia ligera',
+    63: 'Lluvia moderada',
+    65: 'Lluvia intensa',
+    71: 'Nieve ligera',
+    73: 'Nieve moderada',
+    75: 'Nieve intensa',
+    80: 'Chubascos ligeros',
+    81: 'Chubascos moderados',
+    82: 'Chubascos intensos',
+    95: 'Tormenta',
+  };
 
-    current.tempMin = Math.min(current.tempMin, item.main.temp_min);
-    current.tempMax = Math.max(current.tempMax, item.main.temp_max);
-    current.humidity = item.main.humidity;
-    current.rainMm += item.rain?.['3h'] ?? 0;
-    grouped.set(key, current);
-  }
+  if (typeof code !== 'number') return 'Pronostico';
+  return map[code] ?? `Codigo clima ${code}`;
+}
 
-  const forecast = Array.from(grouped.entries())
-    .slice(0, 5)
-    .map(([date, value]) => ({
-      date,
-      tempMin: Number(value.tempMin.toFixed(1)),
-      tempMax: Number(value.tempMax.toFixed(1)),
-      humidity: value.humidity,
-      rainMm: Number(value.rainMm.toFixed(1)),
-    }));
+function normalizeWeather(data: OpenMeteoPayload, lat: number, lon: number): WeatherSnapshot {
+  const dates = data.daily?.time ?? [];
+  const mins = data.daily?.temperature_2m_min ?? [];
+  const maxs = data.daily?.temperature_2m_max ?? [];
+  const rains = data.daily?.precipitation_sum ?? [];
+
+  const forecast = dates.slice(0, 5).map((date, index) => ({
+    date,
+    tempMin: Number((mins[index] ?? 15).toFixed(1)),
+    tempMax: Number((maxs[index] ?? 22).toFixed(1)),
+    humidity: Number((data.current?.relative_humidity_2m ?? 60).toFixed(0)),
+    rainMm: Number((rains[index] ?? 0).toFixed(1)),
+  }));
 
   return {
     fetchedAt: new Date().toISOString(),
-    location: { lat, lon, city },
+    location: { lat, lon, city: 'Open-Meteo' },
     current: {
-      temp: forecast[0]?.tempMax ?? 20,
-      humidity: forecast[0]?.humidity ?? 60,
-      description: data.list?.[0]?.weather?.[0]?.description ?? 'forecast',
+      temp: Number((data.current?.temperature_2m ?? forecast[0]?.tempMax ?? 20).toFixed(1)),
+      humidity: Number((data.current?.relative_humidity_2m ?? forecast[0]?.humidity ?? 60).toFixed(0)),
+      description: weatherCodeDescription(data.current?.weather_code),
     },
     forecast,
   };
@@ -65,21 +91,20 @@ export const GET: APIRoute = async ({ request }) => {
     return new Response(JSON.stringify({ error: 'lat y lon son obligatorios' }), { status: 400 });
   }
 
-  const apiKey = import.meta.env.OPENWEATHER_API_KEY;
-  if (!apiKey) {
-    return new Response(JSON.stringify(fallbackWeather(lat, lon)), { status: 200 });
-  }
-
   try {
-    const endpoint = `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&units=metric&appid=${apiKey}`;
+    const endpoint =
+      `https://api.open-meteo.com/v1/forecast?` +
+      `latitude=${lat}&longitude=${lon}` +
+      `&current=temperature_2m,relative_humidity_2m,weather_code` +
+      `&daily=temperature_2m_min,temperature_2m_max,precipitation_sum` +
+      `&timezone=auto&forecast_days=5`;
     const response = await fetch(endpoint);
     if (!response.ok) {
       return new Response(JSON.stringify(fallbackWeather(lat, lon)), { status: 200 });
     }
 
-    const payload = await response.json();
-    const city = payload?.city?.name ?? 'Unknown';
-    const normalized = normalizeWeather(payload, city, lat, lon);
+    const payload = (await response.json()) as OpenMeteoPayload;
+    const normalized = normalizeWeather(payload, lat, lon);
     return new Response(JSON.stringify(normalized), { status: 200 });
   } catch {
     return new Response(JSON.stringify(fallbackWeather(lat, lon)), { status: 200 });
