@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { createTaskSchema, updatePlantSchema } from '../../../src/utils/validation';
+import { createPlantSchema, createTaskSchema, updatePlantSchema } from '../../../src/utils/validation';
 
 const now = new Date().toISOString();
 
@@ -59,6 +59,16 @@ describe('validation schemas', () => {
       wateringFrequencySpringDays: 4,
       wateringFrequencySummerDays: 2,
       rainAlertLevel: 'high',
+    });
+
+    expect(result.success).toBe(true);
+  });
+
+  it('accepts plant payload with perenualSpeciesId', () => {
+    const result = createPlantSchema.safeParse({
+      plantTypeId: 'Lavanda',
+      perenualSpeciesId: 155,
+      plantingDate: now,
     });
 
     expect(result.success).toBe(true);

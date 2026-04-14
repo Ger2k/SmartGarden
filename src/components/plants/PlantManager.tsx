@@ -6,14 +6,16 @@ import type { Plant } from '../../types/domain';
 import { createPlantSchema } from '../../utils/validation';
 
 type PlantOption = {
-  id: string;
+  plantTypeId: string;
   name: string;
+  perenualSpeciesId?: number;
 };
 
 export default function PlantManager() {
   const { user } = useAuth();
   const { plants, addPlant, removePlant, editPlant, loading } = usePlants(user?.uid);
   const [plantTypeId, setPlantTypeId] = useState('');
+  const [newPerenualSpeciesId, setNewPerenualSpeciesId] = useState<number | undefined>(undefined);
   const [plantSearch, setPlantSearch] = useState('');
   const [plantOptions, setPlantOptions] = useState<PlantOption[]>([]);
   const [plantSource, setPlantSource] = useState<'perenual' | 'local' | 'local-fallback'>('local');
@@ -49,6 +51,7 @@ export default function PlantManager() {
     const plantingDate = new Date(`${newPlantingDate}T00:00:00`).toISOString();
     const parsed = createPlantSchema.safeParse({
       plantTypeId,
+      perenualSpeciesId: newPerenualSpeciesId,
       nickname,
       plantingDate,
       wateringMode: newWateringMode,
@@ -67,6 +70,7 @@ export default function PlantManager() {
     try {
       await addPlant(parsed.data);
       setPlantTypeId('');
+      setNewPerenualSpeciesId(undefined);
       setPlantSearch('');
       setNickname('');
       setNewWateringMode('auto');
@@ -95,7 +99,8 @@ export default function PlantManager() {
           setPlantOptions(payload.options ?? []);
           setPlantSource(payload.source ?? 'local');
           if (!plantTypeId && (payload.options?.length ?? 0) > 0) {
-            setPlantTypeId(payload.options?.[0]?.id ?? '');
+            setPlantTypeId(payload.options?.[0]?.plantTypeId ?? '');
+            setNewPerenualSpeciesId(payload.options?.[0]?.perenualSpeciesId);
           }
         } catch {
           // No-op: fallback visual se resuelve con opciones previas.
@@ -162,15 +167,23 @@ export default function PlantManager() {
           list="plant-options"
           value={plantSearch}
           onChange={(event) => {
-            setPlantSearch(event.target.value);
-            setPlantTypeId(event.target.value);
+            const value = event.target.value;
+            setPlantSearch(value);
+            const selected = plantOptions.find((option) => option.name.toLowerCase() === value.trim().toLowerCase());
+            if (selected) {
+              setPlantTypeId(selected.plantTypeId);
+              setNewPerenualSpeciesId(selected.perenualSpeciesId);
+              return;
+            }
+            setPlantTypeId(value);
+            setNewPerenualSpeciesId(undefined);
           }}
           placeholder="Buscar planta real (ej. Lavanda)"
           className="rounded-lg border border-slate-300 px-3 py-2"
         />
         <datalist id="plant-options">
           {plantOptions.map((option) => (
-            <option key={option.id} value={option.name} />
+            <option key={`${option.plantTypeId}-${option.perenualSpeciesId ?? 'local'}`} value={option.name} />
           ))}
         </datalist>
 

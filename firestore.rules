@@ -13,6 +13,7 @@ service cloud.firestore {
       return request.resource.data.keys().hasOnly([
         'userId',
         'plantTypeId',
+        'perenualSpeciesId',
         'nickname',
         'plantingDate',
         'wateringMode',
@@ -32,6 +33,11 @@ service cloud.firestore {
       return hasOnlyPlantKeys()
         && request.resource.data.userId == uid
         && request.resource.data.plantTypeId is string
+        && (
+          !('perenualSpeciesId' in request.resource.data)
+          || request.resource.data.perenualSpeciesId == null
+          || request.resource.data.perenualSpeciesId is number
+        )
         && request.resource.data.plantingDate is timestamp
         && (
           !('wateringMode' in request.resource.data)

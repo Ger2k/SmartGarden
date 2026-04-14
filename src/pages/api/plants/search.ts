@@ -2,6 +2,7 @@ import type { APIRoute } from 'astro';
 import localPlants from '../../../data/plants.json';
 
 type PerenualSpeciesItem = {
+  id?: number;
   common_name?: string | null;
   scientific_name?: string[];
 };
@@ -11,8 +12,9 @@ type PerenualSpeciesListResponse = {
 };
 
 type PlantOption = {
-  id: string;
+  plantTypeId: string;
   name: string;
+  perenualSpeciesId?: number;
 };
 
 function fromLocalPlants(query: string): PlantOption[] {
@@ -20,7 +22,7 @@ function fromLocalPlants(query: string): PlantOption[] {
   return (localPlants as Array<{ id: string; name: string }>)
     .filter((plant) => (normalized ? plant.name.toLowerCase().includes(normalized) : true))
     .slice(0, 10)
-    .map((plant) => ({ id: plant.id, name: plant.name }));
+    .map((plant) => ({ plantTypeId: plant.id, name: plant.name }));
 }
 
 function normalizeName(item: PerenualSpeciesItem): string | undefined {
@@ -57,7 +59,7 @@ export const GET: APIRoute = async ({ url }) => {
       const key = name.toLowerCase();
       if (seen.has(key)) continue;
       seen.add(key);
-      options.push({ id: name, name });
+      options.push({ plantTypeId: name, name, perenualSpeciesId: item.id });
       if (options.length >= 10) break;
     }
 

@@ -19,6 +19,7 @@ function validPlantPayload(userId: string) {
   return {
     userId,
     plantTypeId: 'tomato',
+    perenualSpeciesId: 155,
     nickname: 'Tomate patio',
     plantingDate: now,
     wateringMode: 'manual',

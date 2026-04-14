@@ -70,6 +70,7 @@ export async function createPlant(userId: string, input: CreatePlantInput): Prom
   await addDoc(ref, {
     userId,
     plantTypeId: parsed.data.plantTypeId,
+    perenualSpeciesId: parsed.data.perenualSpeciesId ?? null,
     nickname: parsed.data.nickname || '',
     plantingDate,
     wateringMode: parsed.data.wateringMode,
@@ -97,6 +98,7 @@ export async function updatePlant(userId: string, plantId: string, patch: Partia
   for (const [key, value] of Object.entries(parsed.data)) {
     if (value !== undefined) {
       patchForDb[key] = value;
+      perenualSpeciesId: parsed.data.perenualSpeciesId ?? null,
     }
   }
   if (parsed.data.plantingDate) {

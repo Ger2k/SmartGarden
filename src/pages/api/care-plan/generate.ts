@@ -1,7 +1,10 @@
 import type { APIRoute } from 'astro';
 import plantTypes from '../../../data/plants.json';
 import { generateCarePlan } from '../../../features/care-plan/carePlanGenerator';
-import { getPerenualWateringFrequencyDays } from '../../../features/plants/perenualService';
+import {
+  getPerenualWateringFrequencyDays,
+  getPerenualWateringFrequencyDaysBySpeciesId,
+} from '../../../features/plants/perenualService';
 import type { Plant, PlantType, WeatherSnapshot } from '../../../types/domain';
 
 function buildFallbackPlantType(name: string, wateringFrequencyDays: number): PlantType {
@@ -54,7 +57,11 @@ export const POST: APIRoute = async ({ request, fetch }) => {
 
     const localPlantType = (plantTypes as PlantType[]).find((item) => item.id === body.plant.plantTypeId);
     const plantNameForLookup = localPlantType?.name ?? body.plant.plantTypeId;
-    const perenualWateringEveryDays = await getPerenualWateringFrequencyDays(plantNameForLookup);
+    const perenualWateringEveryDays =
+      (typeof body.plant.perenualSpeciesId === 'number'
+        ? await getPerenualWateringFrequencyDaysBySpeciesId(body.plant.perenualSpeciesId)
+        : undefined) ??
+      (await getPerenualWateringFrequencyDays(plantNameForLookup));
     const plantType =
       localPlantType ?? buildFallbackPlantType(plantNameForLookup, perenualWateringEveryDays ?? 3);
 

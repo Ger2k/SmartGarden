@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 export const createPlantSchema = z.object({
   plantTypeId: z.string().min(1),
+  perenualSpeciesId: z.number().int().positive().optional(),
   nickname: z.string().trim().max(60).optional().default(''),
   plantingDate: z.string().datetime(),
   wateringMode: z.enum(['auto', 'manual']).optional().default('auto'),
@@ -55,6 +56,7 @@ export type CreateTaskInput = z.infer<typeof createTaskSchema>;
 export const updatePlantSchema = z
   .object({
     nickname: z.string().trim().max(60).optional(),
+    perenualSpeciesId: z.number().int().positive().optional(),
     plantingDate: z.string().datetime().optional(),
     wateringMode: z.enum(['auto', 'manual']).optional(),
     wateringFrequencySpringDays: z.number().int().min(1).max(30).optional(),

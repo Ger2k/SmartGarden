@@ -15,6 +15,32 @@ type PerenualSpeciesDetailsResponse = {
   };
 };
 
+async function fetchPerenualSpeciesDetails(speciesId: number, apiKey: string): Promise<PerenualSpeciesDetailsResponse | undefined> {
+  const detailsUrl = `https://perenual.com/api/v2/species/details/${speciesId}?key=${encodeURIComponent(apiKey)}`;
+  const detailsResponse = await fetch(detailsUrl, { method: 'GET' });
+  if (!detailsResponse.ok) return undefined;
+  return (await detailsResponse.json()) as PerenualSpeciesDetailsResponse;
+}
+
+function extractWateringDays(details: PerenualSpeciesDetailsResponse): number | undefined {
+  const byBenchmark = parseBenchmarkDays(details.watering_general_benchmark?.value);
+  if (typeof byBenchmark === 'number') return byBenchmark;
+  return mapWateringLabelToDays(details.watering);
+}
+
+export async function getPerenualWateringFrequencyDaysBySpeciesId(speciesId: number): Promise<number | undefined> {
+  const apiKey = import.meta.env.PERENUAL_API_KEY;
+  if (!apiKey || !Number.isFinite(speciesId) || speciesId <= 0) return undefined;
+
+  try {
+    const details = await fetchPerenualSpeciesDetails(speciesId, apiKey);
+    if (!details) return undefined;
+    return extractWateringDays(details);
+  } catch {
+    return undefined;
+  }
+}
+
 function parseRangeAverage(raw: string): number | undefined {
   const compact = raw.replace(/\s+/g, '');
   const match = compact.match(/(\d+(?:\.\d+)?)\s*[-/]\s*(\d+(?:\.\d+)?)/);
@@ -85,15 +111,9 @@ export async function getPerenualWateringFrequencyDays(plantCommonName: string):
     const speciesId = pickBestSpeciesId(query, listPayload.data ?? []);
     if (!speciesId) return undefined;
 
-    const detailsUrl = `https://perenual.com/api/v2/species/details/${speciesId}?key=${encodeURIComponent(apiKey)}`;
-    const detailsResponse = await fetch(detailsUrl, { method: 'GET' });
-    if (!detailsResponse.ok) return undefined;
-
-    const details = (await detailsResponse.json()) as PerenualSpeciesDetailsResponse;
-    const byBenchmark = parseBenchmarkDays(details.watering_general_benchmark?.value);
-    if (typeof byBenchmark === 'number') return byBenchmark;
-
-    return mapWateringLabelToDays(details.watering);
+    const details = await fetchPerenualSpeciesDetails(speciesId, apiKey);
+    if (!details) return undefined;
+    return extractWateringDays(details);
   } catch {
     return undefined;
   }

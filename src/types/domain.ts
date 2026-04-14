@@ -33,6 +33,7 @@ export interface Plant {
   id: string;
   userId: string;
   plantTypeId: string;
+  perenualSpeciesId?: number;
   nickname?: string;
   plantingDate: string;
   wateringMode?: WateringMode;
