@@ -11,12 +11,30 @@ export type AuthUser = {
   provider: 'firebase' | 'demo';
 };
 
-function setAuthCookie(enabled: boolean) {
-  if (enabled) {
-    document.cookie = 'sg_auth=1; path=/; max-age=86400; samesite=lax';
-    return;
-  }
-  document.cookie = 'sg_auth=; path=/; max-age=0; samesite=lax';
+function setCookie(name: string, value: string, maxAgeSeconds: number) {
+  document.cookie = `${name}=${encodeURIComponent(value)}; path=/; max-age=${maxAgeSeconds}; samesite=lax`;
+}
+
+function clearCookie(name: string) {
+  document.cookie = `${name}=; path=/; max-age=0; samesite=lax`;
+}
+
+function clearSessionCookies() {
+  clearCookie('sg_auth_mode');
+  clearCookie('sg_id_token');
+  clearCookie('sg_demo_uid');
+}
+
+function setDemoSessionCookies(uid: string) {
+  setCookie('sg_auth_mode', 'demo', 86400);
+  setCookie('sg_demo_uid', uid, 86400);
+  clearCookie('sg_id_token');
+}
+
+function setFirebaseSessionCookies(idToken: string) {
+  setCookie('sg_auth_mode', 'firebase', 3600);
+  setCookie('sg_id_token', idToken, 3600);
+  clearCookie('sg_demo_uid');
 }
 
 function mapFirebaseUser(user: User): AuthUser {
@@ -39,7 +57,7 @@ export function useAuth() {
       try {
         const demoUser = JSON.parse(demoRaw) as AuthUser;
         setUser(demoUser);
-        setAuthCookie(true);
+        setDemoSessionCookies(demoUser.uid);
       } catch {
         localStorage.removeItem(DEMO_USER_KEY);
       }
@@ -49,14 +67,19 @@ export function useAuth() {
 
     try {
       const unsubscribe = subscribeAuth((nextUser) => {
-        if (nextUser) {
-          setAuthCookie(true);
-          setUser(mapFirebaseUser(nextUser));
-        } else {
-          setAuthCookie(false);
-          setUser(null);
-        }
-        setLoading(false);
+        const syncAuthState = async () => {
+          if (nextUser) {
+            const idToken = await nextUser.getIdToken();
+            setFirebaseSessionCookies(idToken);
+            setUser(mapFirebaseUser(nextUser));
+          } else {
+            clearSessionCookies();
+            setUser(null);
+          }
+          setLoading(false);
+        };
+
+        void syncAuthState();
       });
       return unsubscribe;
     } catch {
@@ -68,7 +91,10 @@ export function useAuth() {
   const signIn = async (): Promise<boolean> => {
     setError(null);
     try {
-      await loginWithGoogle();
+      const firebaseUser = await loginWithGoogle();
+      const idToken = await firebaseUser.getIdToken();
+      setFirebaseSessionCookies(idToken);
+      setUser(mapFirebaseUser(firebaseUser));
       return true;
     } catch {
       setError('No se pudo iniciar sesion con Google. Si aun no configuraste Firebase, usa el modo demo.');
@@ -84,7 +110,7 @@ export function useAuth() {
       provider: 'demo',
     };
     localStorage.setItem(DEMO_USER_KEY, JSON.stringify(demoUser));
-    setAuthCookie(true);
+    setDemoSessionCookies(demoUser.uid);
     setUser(demoUser);
     setLoading(false);
     setError(null);
@@ -93,7 +119,7 @@ export function useAuth() {
 
   const signOut = async () => {
     localStorage.removeItem(DEMO_USER_KEY);
-    setAuthCookie(false);
+    clearSessionCookies();
     setUser(null);
 
     try {
