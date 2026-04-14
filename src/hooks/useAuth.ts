@@ -53,16 +53,13 @@ export function useAuth() {
 
   useEffect(() => {
     const demoRaw = localStorage.getItem(DEMO_USER_KEY);
+    let demoUser: AuthUser | null = null;
     if (demoRaw) {
       try {
-        const demoUser = JSON.parse(demoRaw) as AuthUser;
-        setUser(demoUser);
-        setDemoSessionCookies(demoUser.uid);
+        demoUser = JSON.parse(demoRaw) as AuthUser;
       } catch {
         localStorage.removeItem(DEMO_USER_KEY);
       }
-      setLoading(false);
-      return;
     }
 
     try {
@@ -70,8 +67,12 @@ export function useAuth() {
         const syncAuthState = async () => {
           if (nextUser) {
             const idToken = await nextUser.getIdToken();
+            localStorage.removeItem(DEMO_USER_KEY);
             setFirebaseSessionCookies(idToken);
             setUser(mapFirebaseUser(nextUser));
+          } else if (demoUser) {
+            setDemoSessionCookies(demoUser.uid);
+            setUser(demoUser);
           } else {
             clearSessionCookies();
             setUser(null);
