@@ -121,7 +121,7 @@ export default function DashboardPage() {
       <div className="mt-4 grid gap-4 md:grid-cols-2">
         <WeatherCard weather={weather} loading={weatherLoading} error={weatherError} />
         <PlantManager />
-        <DailyTaskList tasks={dailyTasks} onComplete={complete} onSkip={skip} />
+        <DailyTaskList tasks={tasks} onComplete={complete} onSkip={skip} />
         <TaskHistoryList tasks={tasks} />
       </div>
     </AppShell>

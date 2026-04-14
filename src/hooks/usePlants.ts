@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { createPlant, deletePlant, listPlants } from '../features/plants/plantService';
+import { createPlant, deletePlant, listPlants, updatePlant } from '../features/plants/plantService';
 import type { Plant } from '../types/domain';
 import type { CreatePlantInput } from '../utils/validation';
 
@@ -33,5 +33,11 @@ export function usePlants(userId?: string) {
     await refresh();
   };
 
-  return { plants, loading, refresh, addPlant, removePlant };
+  const editPlant = async (plantId: string, patch: Partial<Plant>) => {
+    if (!userId) return;
+    await updatePlant(userId, plantId, patch);
+    await refresh();
+  };
+
+  return { plants, loading, refresh, addPlant, removePlant, editPlant };
 }

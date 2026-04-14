@@ -59,7 +59,7 @@ function taskStatusLabel(status: Task['status']) {
 
 export default function CalendarPage() {
   const { user, loading, signOut } = useAuth();
-  const { tasks } = useTasks(user?.uid);
+  const { tasks, complete, skip } = useTasks(user?.uid);
   const [view, setView] = useState<CalendarView>('month');
   const [currentDate, setCurrentDate] = useState(dayjs().startOf('day'));
   const [selectedDay, setSelectedDay] = useState(dayjs().format('YYYY-MM-DD'));
@@ -220,6 +220,24 @@ export default function CalendarPage() {
               <p className="text-slate-600">Estado: {taskStatusLabel(task.status)}</p>
               {task.completedAt ? (
                 <p className="text-slate-500">Completada: {dayjs(task.completedAt).format('DD/MM/YYYY HH:mm')}</p>
+              ) : null}
+              {task.status === 'pending' ? (
+                <div className="mt-2 flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => void complete(task.id)}
+                    className="rounded bg-emerald-600 px-2 py-1 text-xs text-white"
+                  >
+                    Completar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void skip(task.id)}
+                    className="rounded bg-slate-600 px-2 py-1 text-xs text-white"
+                  >
+                    Omitir
+                  </button>
+                </div>
               ) : null}
             </li>
           ))}
