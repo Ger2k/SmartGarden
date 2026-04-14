@@ -1,15 +1,22 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import dayjs from 'dayjs';
-import plantTypes from '../../data/plants.json';
 import { useAuth } from '../../hooks/useAuth';
 import { usePlants } from '../../hooks/usePlants';
 import type { Plant } from '../../types/domain';
 import { createPlantSchema } from '../../utils/validation';
 
+type PlantOption = {
+  id: string;
+  name: string;
+};
+
 export default function PlantManager() {
   const { user } = useAuth();
   const { plants, addPlant, removePlant, editPlant, loading } = usePlants(user?.uid);
-  const [plantTypeId, setPlantTypeId] = useState(plantTypes[0]?.id ?? '');
+  const [plantTypeId, setPlantTypeId] = useState('');
+  const [plantSearch, setPlantSearch] = useState('');
+  const [plantOptions, setPlantOptions] = useState<PlantOption[]>([]);
+  const [plantSource, setPlantSource] = useState<'perenual' | 'local' | 'local-fallback'>('local');
   const [nickname, setNickname] = useState('');
   const [newPlantingDate, setNewPlantingDate] = useState(dayjs().format('YYYY-MM-DD'));
   const [newWateringMode, setNewWateringMode] = useState<Plant['wateringMode']>('auto');
@@ -59,6 +66,8 @@ export default function PlantManager() {
 
     try {
       await addPlant(parsed.data);
+      setPlantTypeId('');
+      setPlantSearch('');
       setNickname('');
       setNewWateringMode('auto');
       setNewSpringDays('');
@@ -72,6 +81,35 @@ export default function PlantManager() {
       setAddError(message);
     }
   };
+
+  useEffect(() => {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => {
+      const run = async () => {
+        try {
+          const response = await fetch(`/api/plants/search?q=${encodeURIComponent(plantSearch)}`, {
+            signal: controller.signal,
+          });
+          if (!response.ok) return;
+          const payload = (await response.json()) as { options?: PlantOption[]; source?: 'perenual' | 'local' | 'local-fallback' };
+          setPlantOptions(payload.options ?? []);
+          setPlantSource(payload.source ?? 'local');
+          if (!plantTypeId && (payload.options?.length ?? 0) > 0) {
+            setPlantTypeId(payload.options?.[0]?.id ?? '');
+          }
+        } catch {
+          // No-op: fallback visual se resuelve con opciones previas.
+        }
+      };
+
+      void run();
+    }, 250);
+
+    return () => {
+      controller.abort();
+      clearTimeout(timeout);
+    };
+  }, [plantSearch, plantTypeId]);
 
   const startEdit = (plant: Plant) => {
     setEditingPlantId(plant.id);
@@ -120,17 +158,21 @@ export default function PlantManager() {
       <h3 className="text-lg font-semibold">Mis plantas</h3>
 
       <div className="mt-4 grid gap-2 md:grid-cols-4">
-        <select
-          value={plantTypeId}
-          onChange={(event) => setPlantTypeId(event.target.value)}
+        <input
+          list="plant-options"
+          value={plantSearch}
+          onChange={(event) => {
+            setPlantSearch(event.target.value);
+            setPlantTypeId(event.target.value);
+          }}
+          placeholder="Buscar planta real (ej. Lavanda)"
           className="rounded-lg border border-slate-300 px-3 py-2"
-        >
-          {plantTypes.map((type) => (
-            <option key={type.id} value={type.id}>
-              {type.name}
-            </option>
+        />
+        <datalist id="plant-options">
+          {plantOptions.map((option) => (
+            <option key={option.id} value={option.name} />
           ))}
-        </select>
+        </datalist>
 
         <input
           value={nickname}
@@ -149,12 +191,16 @@ export default function PlantManager() {
         <button
           type="button"
           onClick={() => void handleAdd()}
-          disabled={loading}
+          disabled={loading || !plantTypeId.trim()}
           className="rounded-lg bg-emerald-600 px-3 py-2 text-white"
         >
           Anadir planta
         </button>
       </div>
+
+      <p className="mt-1 text-xs text-slate-500">
+        Fuente de catalogo: {plantSource === 'perenual' ? 'Perenual' : 'Catalogo local'}
+      </p>
 
       <div className="mt-2 grid gap-2 md:grid-cols-3">
         <select

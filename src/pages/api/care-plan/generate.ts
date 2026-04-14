@@ -4,6 +4,19 @@ import { generateCarePlan } from '../../../features/care-plan/carePlanGenerator'
 import { getPerenualWateringFrequencyDays } from '../../../features/plants/perenualService';
 import type { Plant, PlantType, WeatherSnapshot } from '../../../types/domain';
 
+function buildFallbackPlantType(name: string, wateringFrequencyDays: number): PlantType {
+  return {
+    id: name.toLowerCase().replace(/\s+/g, '-'),
+    name,
+    wateringFrequencyDays,
+    harvestTimeDays: 90,
+    sunlightNeeds: 'medium',
+    season: 'all',
+    idealTemperature: { min: 15, max: 30 },
+    idealHumidity: { min: 45, max: 75 },
+  };
+}
+
 function fallbackWeather(lat: number, lon: number): WeatherSnapshot {
   const today = new Date().toISOString().slice(0, 10);
   return {
@@ -39,10 +52,11 @@ export const POST: APIRoute = async ({ request, fetch }) => {
       return new Response(JSON.stringify({ error: 'userId y plant son obligatorios' }), { status: 400 });
     }
 
-    const plantType = (plantTypes as PlantType[]).find((item) => item.id === body.plant.plantTypeId);
-    if (!plantType) {
-      return new Response(JSON.stringify({ error: 'Tipo de planta desconocido' }), { status: 400 });
-    }
+    const localPlantType = (plantTypes as PlantType[]).find((item) => item.id === body.plant.plantTypeId);
+    const plantNameForLookup = localPlantType?.name ?? body.plant.plantTypeId;
+    const perenualWateringEveryDays = await getPerenualWateringFrequencyDays(plantNameForLookup);
+    const plantType =
+      localPlantType ?? buildFallbackPlantType(plantNameForLookup, perenualWateringEveryDays ?? 3);
 
     const lat = Number.isFinite(body.lat) ? (body.lat as number) : 40.4168;
     const lon = Number.isFinite(body.lon) ? (body.lon as number) : -3.7038;
@@ -66,7 +80,7 @@ export const POST: APIRoute = async ({ request, fetch }) => {
       plantType,
       weather,
       overdueCriticalTasks: body.overdueCriticalTasks ?? 0,
-      externalWateringEveryDays: await getPerenualWateringFrequencyDays(plantType.name),
+      externalWateringEveryDays: perenualWateringEveryDays,
     });
 
     return new Response(JSON.stringify(output), { status: 200 });
