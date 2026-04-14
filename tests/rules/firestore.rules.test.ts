@@ -10,8 +10,9 @@ import { afterAll, beforeAll, beforeEach, describe, it } from 'vitest';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 
 const PROJECT_ID = 'demo-smart-garden';
-const FIRESTORE_HOST = '127.0.0.1';
-const FIRESTORE_PORT = 8080;
+const emulatorHost = process.env.FIRESTORE_EMULATOR_HOST ?? '127.0.0.1:8080';
+const [FIRESTORE_HOST, FIRESTORE_PORT_RAW] = emulatorHost.split(':');
+const FIRESTORE_PORT = Number(FIRESTORE_PORT_RAW || 8080);
 
 function validPlantPayload(userId: string) {
   const now = new Date();
