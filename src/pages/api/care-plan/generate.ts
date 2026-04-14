@@ -3,6 +3,25 @@ import plantTypes from '../../../data/plants.json';
 import { generateCarePlan } from '../../../features/care-plan/carePlanGenerator';
 import type { Plant, PlantType, WeatherSnapshot } from '../../../types/domain';
 
+function fallbackWeather(lat: number, lon: number): WeatherSnapshot {
+  const today = new Date().toISOString().slice(0, 10);
+  return {
+    fetchedAt: new Date().toISOString(),
+    location: { lat, lon, city: 'Unknown' },
+    current: { temp: 20, humidity: 60, description: 'fallback' },
+    forecast: [
+      { date: today, tempMin: 15, tempMax: 22, humidity: 60, rainMm: 0 },
+      { date: today, tempMin: 16, tempMax: 24, humidity: 58, rainMm: 1 },
+      { date: today, tempMin: 17, tempMax: 26, humidity: 55, rainMm: 0 },
+    ],
+  };
+}
+
+function isWeatherSnapshot(value: unknown): value is WeatherSnapshot {
+  const data = value as WeatherSnapshot;
+  return Boolean(data?.current && Array.isArray(data?.forecast));
+}
+
 export const POST: APIRoute = async ({ request, fetch }) => {
   try {
     const body = (await request.json()) as {
@@ -22,11 +41,21 @@ export const POST: APIRoute = async ({ request, fetch }) => {
       return new Response(JSON.stringify({ error: 'Tipo de planta desconocido' }), { status: 400 });
     }
 
-    const lat = body.lat ?? 40.4168;
-    const lon = body.lon ?? -3.7038;
+    const lat = Number.isFinite(body.lat) ? (body.lat as number) : 40.4168;
+    const lon = Number.isFinite(body.lon) ? (body.lon as number) : -3.7038;
 
-    const weatherResponse = await fetch(`/api/weather/forecast?lat=${lat}&lon=${lon}`);
-    const weather = (await weatherResponse.json()) as WeatherSnapshot;
+    let weather: WeatherSnapshot = fallbackWeather(lat, lon);
+    try {
+      const weatherResponse = await fetch(`/api/weather/forecast?lat=${lat}&lon=${lon}`);
+      if (weatherResponse.ok) {
+        const payload = (await weatherResponse.json()) as unknown;
+        if (isWeatherSnapshot(payload)) {
+          weather = payload;
+        }
+      }
+    } catch {
+      weather = fallbackWeather(lat, lon);
+    }
 
     const output = generateCarePlan({
       userId: body.userId,
@@ -37,7 +66,8 @@ export const POST: APIRoute = async ({ request, fetch }) => {
     });
 
     return new Response(JSON.stringify(output), { status: 200 });
-  } catch {
+  } catch (error) {
+    console.error('Error en /api/care-plan/generate', error);
     return new Response(JSON.stringify({ error: 'No se pudo generar el plan de cuidado' }), { status: 500 });
   }
 };
