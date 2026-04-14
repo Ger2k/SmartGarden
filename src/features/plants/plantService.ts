@@ -70,10 +70,9 @@ export async function createPlant(userId: string, input: CreatePlantInput): Prom
   const firestore = getDbOrThrow();
   const ref = collection(firestore, 'users', userId, 'plants');
   const plantingDate = Timestamp.fromDate(new Date(parsed.data.plantingDate));
-  await addDoc(ref, {
+  const basePayload = {
     userId,
     plantTypeId: parsed.data.plantTypeId,
-    perenualSpeciesId: parsed.data.perenualSpeciesId ?? null,
     nickname: parsed.data.nickname || '',
     plantingDate,
     wateringMode: parsed.data.wateringMode,
@@ -86,7 +85,24 @@ export async function createPlant(userId: string, input: CreatePlantInput): Prom
     healthScore: 85,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
-  });
+  };
+
+  const speciesPayload =
+    typeof parsed.data.perenualSpeciesId === 'number' ? { perenualSpeciesId: parsed.data.perenualSpeciesId } : {};
+
+  try {
+    await addDoc(ref, { ...basePayload, ...speciesPayload });
+  } catch (error) {
+    const code = error instanceof Error && 'code' in error ? String((error as { code?: unknown }).code ?? '') : '';
+
+    if (speciesPayload.perenualSpeciesId !== undefined && code.includes('permission-denied')) {
+      // Compatibility fallback for environments with Firestore rules not yet updated to allow perenualSpeciesId.
+      await addDoc(ref, basePayload);
+      return;
+    }
+
+    throw error;
+  }
 }
 
 export async function updatePlant(userId: string, plantId: string, patch: Partial<Plant>): Promise<void> {
