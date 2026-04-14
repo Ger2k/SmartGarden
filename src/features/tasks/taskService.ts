@@ -11,6 +11,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '../../services/firebase';
 import type { Task } from '../../types/domain';
+import { createTaskSchema } from '../../utils/validation';
 
 function demoTasksKey(userId: string): string {
   return `sg_demo_tasks_${userId}`;
@@ -66,19 +67,24 @@ export async function listTasks(userId: string): Promise<Task[]> {
 }
 
 export async function createTask(task: Omit<Task, 'id'>): Promise<void> {
+  const parsed = createTaskSchema.safeParse(task);
+  if (!parsed.success) {
+    throw new Error(`Task payload invalido: ${parsed.error.issues[0]?.message ?? 'error de validacion'}`);
+  }
+
   if (!db) {
-    const tasks = readDemoTasks(task.userId);
-    const next: Task = { ...task, id: makeId('task') };
-    writeDemoTasks(task.userId, [...tasks, next]);
+    const tasks = readDemoTasks(parsed.data.userId);
+    const next: Task = { ...parsed.data, id: makeId('task') };
+    writeDemoTasks(parsed.data.userId, [...tasks, next]);
     return;
   }
 
-  const ref = collection(db, 'users', task.userId, 'tasks');
-  const dueDate = Timestamp.fromDate(new Date(task.dueDate));
+  const ref = collection(db, 'users', parsed.data.userId, 'tasks');
+  const dueDate = Timestamp.fromDate(new Date(parsed.data.dueDate));
   await addDoc(ref, {
-    ...task,
+    ...parsed.data,
     dueDate,
-    completedAt: task.completedAt ? Timestamp.fromDate(new Date(task.completedAt)) : null,
+    completedAt: parsed.data.completedAt ? Timestamp.fromDate(new Date(parsed.data.completedAt)) : null,
     createdAt: serverTimestamp(),
     updatedAt: serverTimestamp(),
   });

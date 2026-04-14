@@ -5,13 +5,16 @@ import {
   signOut,
   type User,
 } from 'firebase/auth';
-import { auth } from '../../services/firebase';
+import { auth, missingFirebaseEnvKeys } from '../../services/firebase';
 
 const provider = new GoogleAuthProvider();
 
 export async function loginWithGoogle(): Promise<User> {
   if (!auth) {
-    throw new Error('Firebase auth no configurado');
+    const hint = missingFirebaseEnvKeys.length
+      ? ` Variables faltantes: ${missingFirebaseEnvKeys.join(', ')}`
+      : ' Verifica que reiniciaste el servidor despues de crear .env.';
+    throw new Error(`Firebase auth no configurado.${hint}`);
   }
   const result = await signInWithPopup(auth, provider);
   return result.user;

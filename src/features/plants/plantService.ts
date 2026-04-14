@@ -10,7 +10,7 @@ import {
   Timestamp,
   updateDoc,
 } from 'firebase/firestore';
-import type { CreatePlantInput } from '../../utils/validation';
+import { createPlantSchema, type CreatePlantInput, updatePlantSchema } from '../../utils/validation';
 import type { Plant } from '../../types/domain';
 import { db } from '../../services/firebase';
 
@@ -67,15 +67,20 @@ export async function listPlants(userId: string): Promise<Plant[]> {
 }
 
 export async function createPlant(userId: string, input: CreatePlantInput): Promise<void> {
+  const parsed = createPlantSchema.safeParse(input);
+  if (!parsed.success) {
+    throw new Error(`Plant payload invalido: ${parsed.error.issues[0]?.message ?? 'error de validacion'}`);
+  }
+
   if (!db) {
     const now = new Date().toISOString();
     const plants = readDemoPlants(userId);
     const plant: Plant = {
       id: makeId('plant'),
       userId,
-      plantTypeId: input.plantTypeId,
-      nickname: input.nickname || '',
-      plantingDate: input.plantingDate,
+      plantTypeId: parsed.data.plantTypeId,
+      nickname: parsed.data.nickname || '',
+      plantingDate: parsed.data.plantingDate,
       healthStatus: 'Healthy',
       healthScore: 85,
       createdAt: now,
@@ -86,11 +91,11 @@ export async function createPlant(userId: string, input: CreatePlantInput): Prom
   }
 
   const ref = collection(db, 'users', userId, 'plants');
-  const plantingDate = Timestamp.fromDate(new Date(input.plantingDate));
+  const plantingDate = Timestamp.fromDate(new Date(parsed.data.plantingDate));
   await addDoc(ref, {
     userId,
-    plantTypeId: input.plantTypeId,
-    nickname: input.nickname || '',
+    plantTypeId: parsed.data.plantTypeId,
+    nickname: parsed.data.nickname || '',
     plantingDate,
     healthStatus: 'Healthy',
     healthScore: 85,
@@ -100,18 +105,28 @@ export async function createPlant(userId: string, input: CreatePlantInput): Prom
 }
 
 export async function updatePlant(userId: string, plantId: string, patch: Partial<Plant>): Promise<void> {
+  const parsed = updatePlantSchema.safeParse(patch);
+  if (!parsed.success) {
+    throw new Error(`Plant patch invalido: ${parsed.error.issues[0]?.message ?? 'error de validacion'}`);
+  }
+
   if (!db) {
     const plants = readDemoPlants(userId);
     const next = plants.map((plant) =>
-      plant.id === plantId ? { ...plant, ...patch, updatedAt: new Date().toISOString() } : plant
+      plant.id === plantId ? { ...plant, ...parsed.data, updatedAt: new Date().toISOString() } : plant
     );
     writeDemoPlants(userId, next);
     return;
   }
 
   const ref = doc(db, 'users', userId, 'plants', plantId);
+  const patchForDb: Record<string, unknown> = { ...parsed.data };
+  if (parsed.data.plantingDate) {
+    patchForDb.plantingDate = Timestamp.fromDate(new Date(parsed.data.plantingDate));
+  }
+
   await updateDoc(ref, {
-    ...patch,
+    ...patchForDb,
     updatedAt: serverTimestamp(),
   });
 }
