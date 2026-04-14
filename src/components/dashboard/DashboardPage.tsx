@@ -112,7 +112,7 @@ export default function DashboardPage() {
 
       {geoError ? <p className="mb-4 text-sm text-amber-700">{geoError}</p> : null}
 
-      <DashboardOverview plants={plants} dailyTasks={dailyTasks} latestPlan={latestPlan} />
+      <DashboardOverview plants={plants} dailyTasks={dailyTasks} tasks={tasks} latestPlan={latestPlan} />
 
       <div className="mt-4">
         <PlantAnalytics plants={plants} tasks={tasks} carePlans={carePlans} />

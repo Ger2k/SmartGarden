@@ -13,6 +13,7 @@ export default function PlantManager() {
   const [editingPlantId, setEditingPlantId] = useState<string | null>(null);
   const [editNickname, setEditNickname] = useState('');
   const [editHealthStatus, setEditHealthStatus] = useState<Plant['healthStatus']>('Healthy');
+  const [editPlantingDate, setEditPlantingDate] = useState('');
   const healthLabels = {
     Healthy: 'Saludable',
     'Needs attention': 'Necesita atencion',
@@ -37,18 +38,22 @@ export default function PlantManager() {
     setEditingPlantId(plant.id);
     setEditNickname(plant.nickname ?? '');
     setEditHealthStatus(plant.healthStatus ?? 'Healthy');
+    setEditPlantingDate((plant.plantingDate ?? '').slice(0, 10));
   };
 
   const cancelEdit = () => {
     setEditingPlantId(null);
     setEditNickname('');
     setEditHealthStatus('Healthy');
+    setEditPlantingDate('');
   };
 
   const saveEdit = async (plantId: string) => {
+    const plantingIso = editPlantingDate ? new Date(`${editPlantingDate}T00:00:00`).toISOString() : undefined;
     await editPlant(plantId, {
       nickname: editNickname,
       healthStatus: editHealthStatus,
+      plantingDate: plantingIso,
     });
     cancelEdit();
   };
@@ -92,10 +97,16 @@ export default function PlantManager() {
           <li key={plant.id} className="flex items-center justify-between rounded-lg border border-slate-200 px-3 py-2">
             {editingPlantId === plant.id ? (
               <div className="w-full">
-                <div className="grid gap-2 md:grid-cols-3">
+                <div className="grid gap-2 md:grid-cols-4">
                   <input
                     value={editNickname}
                     onChange={(event) => setEditNickname(event.target.value)}
+                    className="rounded border border-slate-300 px-2 py-1 text-sm"
+                  />
+                  <input
+                    type="date"
+                    value={editPlantingDate}
+                    onChange={(event) => setEditPlantingDate(event.target.value)}
                     className="rounded border border-slate-300 px-2 py-1 text-sm"
                   />
                   <select

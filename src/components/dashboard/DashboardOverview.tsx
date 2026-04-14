@@ -1,17 +1,38 @@
+import dayjs from 'dayjs';
 import type { CarePlan, Plant, Task } from '../../types/domain';
 
 type DashboardOverviewProps = {
   plants: Plant[];
   dailyTasks: Task[];
+  tasks: Task[];
   latestPlan?: CarePlan;
 };
 
-export default function DashboardOverview({ plants, dailyTasks, latestPlan }: DashboardOverviewProps) {
+export default function DashboardOverview({ plants, dailyTasks, tasks, latestPlan }: DashboardOverviewProps) {
   const healthLabels = {
     Healthy: 'Saludable',
     'Needs attention': 'Necesita atencion',
     'At risk': 'En riesgo',
   } as const;
+
+  const priorityTasks = [...tasks]
+    .filter((task) => task.status === 'pending')
+    .sort((a, b) => {
+      const aDue = dayjs(a.dueDate);
+      const bDue = dayjs(b.dueDate);
+      const today = dayjs().startOf('day');
+      const aOverdue = aDue.isBefore(today, 'day');
+      const bOverdue = bDue.isBefore(today, 'day');
+      if (aOverdue !== bOverdue) return aOverdue ? -1 : 1;
+      return aDue.valueOf() - bDue.valueOf();
+    })
+    .slice(0, 3);
+
+  const taskTypeLabels: Record<Task['type'], string> = {
+    watering: 'Riego',
+    harvest: 'Cosecha',
+    monitoring: 'Monitoreo',
+  };
 
   return (
     <div className="grid gap-4 md:grid-cols-3">
@@ -39,6 +60,18 @@ export default function DashboardOverview({ plants, dailyTasks, latestPlan }: Da
             <li key={insight.code}>{insight.message}</li>
           ))}
           {!latestPlan?.insights?.length ? <li>Aun no hay recomendaciones. Genera un plan de cuidado primero.</li> : null}
+        </ul>
+      </article>
+
+      <article className="rounded-xl border border-emerald-200 bg-white p-4 md:col-span-3">
+        <p className="text-sm text-slate-500">Prioridades del dia</p>
+        <ul className="mt-2 space-y-1 text-sm">
+          {priorityTasks.map((task) => (
+            <li key={task.id} className="rounded border border-slate-200 px-2 py-1">
+              {taskTypeLabels[task.type]} - vence {dayjs(task.dueDate).format('DD/MM/YYYY')}
+            </li>
+          ))}
+          {!priorityTasks.length ? <li>No hay prioridades pendientes por ahora.</li> : null}
         </ul>
       </article>
     </div>
