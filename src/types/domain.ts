@@ -4,6 +4,14 @@ export type TaskType = 'watering' | 'harvest' | 'monitoring';
 
 export type TaskStatus = 'pending' | 'completed' | 'skipped';
 
+export type WateringMode = 'auto' | 'manual';
+
+export type RainAlertLevel = 'low' | 'medium' | 'high';
+
+export type TaskPriority = 'low' | 'medium' | 'high';
+
+export type WeatherGuidance = 'none' | 'suggest_postpone' | 'skip_recommended';
+
 export interface PlantType {
   id: string;
   name: string;
@@ -27,6 +35,12 @@ export interface Plant {
   plantTypeId: string;
   nickname?: string;
   plantingDate: string;
+  wateringMode?: WateringMode;
+  wateringFrequencySpringDays?: number;
+  wateringFrequencySummerDays?: number;
+  wateringFrequencyAutumnDays?: number;
+  wateringFrequencyWinterDays?: number;
+  rainAlertLevel?: RainAlertLevel;
   healthStatus?: HealthStatus;
   healthScore?: number;
   createdAt: string;
@@ -85,6 +99,9 @@ export interface Task {
   carePlanId: string;
   type: TaskType;
   dueDate: string;
+  priority?: TaskPriority;
+  weatherGuidance?: WeatherGuidance;
+  weatherReason?: string;
   status: TaskStatus;
   completedAt?: string;
   createdAt: string;

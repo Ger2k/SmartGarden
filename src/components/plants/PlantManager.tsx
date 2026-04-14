@@ -16,6 +16,12 @@ export default function PlantManager() {
   const [editNickname, setEditNickname] = useState('');
   const [editHealthStatus, setEditHealthStatus] = useState<Plant['healthStatus']>('Healthy');
   const [editPlantingDate, setEditPlantingDate] = useState('');
+  const [editWateringMode, setEditWateringMode] = useState<Plant['wateringMode']>('auto');
+  const [editSpringDays, setEditSpringDays] = useState('');
+  const [editSummerDays, setEditSummerDays] = useState('');
+  const [editAutumnDays, setEditAutumnDays] = useState('');
+  const [editWinterDays, setEditWinterDays] = useState('');
+  const [editRainAlertLevel, setEditRainAlertLevel] = useState<Plant['rainAlertLevel']>('medium');
   const [addError, setAddError] = useState<string | null>(null);
   const [addSuccess, setAddSuccess] = useState<string | null>(null);
   const healthLabels = {
@@ -54,6 +60,12 @@ export default function PlantManager() {
     setEditNickname(plant.nickname ?? '');
     setEditHealthStatus(plant.healthStatus ?? 'Healthy');
     setEditPlantingDate((plant.plantingDate ?? '').slice(0, 10));
+    setEditWateringMode(plant.wateringMode ?? 'auto');
+    setEditSpringDays(plant.wateringFrequencySpringDays ? String(plant.wateringFrequencySpringDays) : '');
+    setEditSummerDays(plant.wateringFrequencySummerDays ? String(plant.wateringFrequencySummerDays) : '');
+    setEditAutumnDays(plant.wateringFrequencyAutumnDays ? String(plant.wateringFrequencyAutumnDays) : '');
+    setEditWinterDays(plant.wateringFrequencyWinterDays ? String(plant.wateringFrequencyWinterDays) : '');
+    setEditRainAlertLevel(plant.rainAlertLevel ?? 'medium');
   };
 
   const cancelEdit = () => {
@@ -61,6 +73,12 @@ export default function PlantManager() {
     setEditNickname('');
     setEditHealthStatus('Healthy');
     setEditPlantingDate('');
+    setEditWateringMode('auto');
+    setEditSpringDays('');
+    setEditSummerDays('');
+    setEditAutumnDays('');
+    setEditWinterDays('');
+    setEditRainAlertLevel('medium');
   };
 
   const saveEdit = async (plantId: string) => {
@@ -69,6 +87,12 @@ export default function PlantManager() {
       nickname: editNickname,
       healthStatus: editHealthStatus,
       plantingDate: plantingIso,
+      wateringMode: editWateringMode,
+      wateringFrequencySpringDays: editSpringDays ? Number(editSpringDays) : undefined,
+      wateringFrequencySummerDays: editSummerDays ? Number(editSummerDays) : undefined,
+      wateringFrequencyAutumnDays: editAutumnDays ? Number(editAutumnDays) : undefined,
+      wateringFrequencyWinterDays: editWinterDays ? Number(editWinterDays) : undefined,
+      rainAlertLevel: editRainAlertLevel,
     });
     cancelEdit();
   };
@@ -122,7 +146,7 @@ export default function PlantManager() {
           <li key={plant.id} className="flex items-center justify-between rounded-lg border border-slate-200 px-3 py-2">
             {editingPlantId === plant.id ? (
               <div className="w-full">
-                <div className="grid gap-2 md:grid-cols-4">
+                <div className="grid gap-2 md:grid-cols-3">
                   <input
                     value={editNickname}
                     onChange={(event) => setEditNickname(event.target.value)}
@@ -143,6 +167,23 @@ export default function PlantManager() {
                     <option value="Needs attention">Necesita atencion</option>
                     <option value="At risk">En riesgo</option>
                   </select>
+                  <select
+                    value={editWateringMode ?? 'auto'}
+                    onChange={(event) => setEditWateringMode(event.target.value as Plant['wateringMode'])}
+                    className="rounded border border-slate-300 px-2 py-1 text-sm"
+                  >
+                    <option value="auto">Riego automatico</option>
+                    <option value="manual">Riego manual por temporada</option>
+                  </select>
+                  <select
+                    value={editRainAlertLevel ?? 'medium'}
+                    onChange={(event) => setEditRainAlertLevel(event.target.value as Plant['rainAlertLevel'])}
+                    className="rounded border border-slate-300 px-2 py-1 text-sm"
+                  >
+                    <option value="low">Lluvia: baja sensibilidad</option>
+                    <option value="medium">Lluvia: sensibilidad media</option>
+                    <option value="high">Lluvia: alta sensibilidad</option>
+                  </select>
                   <div className="flex gap-2">
                     <button
                       type="button"
@@ -160,6 +201,46 @@ export default function PlantManager() {
                     </button>
                   </div>
                 </div>
+                {editWateringMode === 'manual' ? (
+                  <div className="mt-2 grid gap-2 md:grid-cols-4">
+                    <input
+                      type="number"
+                      min={1}
+                      max={30}
+                      placeholder="Primavera (dias)"
+                      value={editSpringDays}
+                      onChange={(event) => setEditSpringDays(event.target.value)}
+                      className="rounded border border-slate-300 px-2 py-1 text-sm"
+                    />
+                    <input
+                      type="number"
+                      min={1}
+                      max={30}
+                      placeholder="Verano (dias)"
+                      value={editSummerDays}
+                      onChange={(event) => setEditSummerDays(event.target.value)}
+                      className="rounded border border-slate-300 px-2 py-1 text-sm"
+                    />
+                    <input
+                      type="number"
+                      min={1}
+                      max={30}
+                      placeholder="Otono (dias)"
+                      value={editAutumnDays}
+                      onChange={(event) => setEditAutumnDays(event.target.value)}
+                      className="rounded border border-slate-300 px-2 py-1 text-sm"
+                    />
+                    <input
+                      type="number"
+                      min={1}
+                      max={30}
+                      placeholder="Invierno (dias)"
+                      value={editWinterDays}
+                      onChange={(event) => setEditWinterDays(event.target.value)}
+                      className="rounded border border-slate-300 px-2 py-1 text-sm"
+                    />
+                  </div>
+                ) : null}
               </div>
             ) : (
               <>
@@ -167,6 +248,8 @@ export default function PlantManager() {
                   <p className="font-medium">{plant.nickname || plant.plantTypeId}</p>
                   <p className="text-xs text-slate-500">Estado: {healthLabels[plant.healthStatus ?? 'Healthy']}</p>
                   <p className="text-xs text-slate-500">Plantada: {dayjs(plant.plantingDate).format('DD/MM/YYYY')}</p>
+                  <p className="text-xs text-slate-500">Riego: {plant.wateringMode === 'manual' ? 'Manual por temporada' : 'Automatico'}</p>
+                  <p className="text-xs text-slate-500">Lluvia: {plant.rainAlertLevel ?? 'medium'}</p>
                 </div>
                 <div className="flex gap-2">
                   <button

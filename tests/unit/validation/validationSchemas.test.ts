@@ -52,4 +52,15 @@ describe('validation schemas', () => {
 
     expect(result.success).toBe(true);
   });
+
+  it('accepts seasonal manual watering configuration', () => {
+    const result = updatePlantSchema.safeParse({
+      wateringMode: 'manual',
+      wateringFrequencySpringDays: 4,
+      wateringFrequencySummerDays: 2,
+      rainAlertLevel: 'high',
+    });
+
+    expect(result.success).toBe(true);
+  });
 });

@@ -21,6 +21,12 @@ function validPlantPayload(userId: string) {
     plantTypeId: 'tomato',
     nickname: 'Tomate patio',
     plantingDate: now,
+    wateringMode: 'manual',
+    wateringFrequencySpringDays: 4,
+    wateringFrequencySummerDays: 2,
+    wateringFrequencyAutumnDays: 5,
+    wateringFrequencyWinterDays: 8,
+    rainAlertLevel: 'high',
     healthStatus: 'Healthy',
     healthScore: 85,
     createdAt: now,
@@ -36,6 +42,9 @@ function validTaskPayload(userId: string) {
     carePlanId: 'plan_1',
     type: 'watering',
     dueDate: now,
+    priority: 'high',
+    weatherGuidance: 'suggest_postpone',
+    weatherReason: 'Pronostico acumulado de lluvia: 6.0 mm en 48h.',
     status: 'pending',
     completedAt: null,
     createdAt: now,
@@ -91,6 +100,13 @@ describe('firestore security rules', () => {
         completedAt: null,
       })
     );
+  });
+
+  it('allows task with priority and weather guidance metadata', async () => {
+    const userA = testEnv.authenticatedContext('userA').firestore();
+    const taskRef = doc(userA, 'users/userA/tasks/task_2');
+
+    await assertSucceeds(setDoc(taskRef, validTaskPayload('userA')));
   });
 
   it('denies unauthenticated read to protected user data', async () => {

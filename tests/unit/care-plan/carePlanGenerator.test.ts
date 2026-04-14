@@ -81,4 +81,39 @@ describe('carePlanGenerator', () => {
     expect(output.plan.healthStatus).toBe('At risk');
     expect(output.tasks.some((task) => task.type === 'monitoring')).toBe(true);
   });
+
+  it('uses manual seasonal watering frequency when plant is configured in manual mode', () => {
+    const plant = makePlant();
+    plant.wateringMode = 'manual';
+    plant.wateringFrequencySpringDays = 5;
+    plant.rainAlertLevel = 'low';
+
+    const output = generateCarePlan({
+      userId: 'user_1',
+      plant,
+      plantType: makePlantType(),
+      weather: makeWeather([0, 0, 0], [25, 24, 23]),
+      overdueCriticalTasks: 0,
+    });
+
+    expect(output.plan.wateringEveryDays).toBe(5);
+    expect(output.plan.decisionLog.some((line) => line.includes('Riego manual por temporada'))).toBe(true);
+  });
+
+  it('sets mild rain guidance without forcing skip when rain is moderate', () => {
+    const plant = makePlant();
+    plant.rainAlertLevel = 'low';
+
+    const output = generateCarePlan({
+      userId: 'user_1',
+      plant,
+      plantType: makePlantType(),
+      weather: makeWeather([4, 4, 0], [26, 26, 25]),
+      overdueCriticalTasks: 0,
+    });
+
+    const wateringTask = output.tasks.find((task) => task.type === 'watering');
+    expect(wateringTask?.weatherGuidance).toBe('suggest_postpone');
+    expect(wateringTask?.priority).toBe('high');
+  });
 });

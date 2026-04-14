@@ -4,6 +4,12 @@ export const createPlantSchema = z.object({
   plantTypeId: z.string().min(1),
   nickname: z.string().trim().max(60).optional().default(''),
   plantingDate: z.string().datetime(),
+  wateringMode: z.enum(['auto', 'manual']).optional().default('auto'),
+  wateringFrequencySpringDays: z.number().int().min(1).max(30).optional(),
+  wateringFrequencySummerDays: z.number().int().min(1).max(30).optional(),
+  wateringFrequencyAutumnDays: z.number().int().min(1).max(30).optional(),
+  wateringFrequencyWinterDays: z.number().int().min(1).max(30).optional(),
+  rainAlertLevel: z.enum(['low', 'medium', 'high']).optional().default('medium'),
 });
 
 export type CreatePlantInput = z.infer<typeof createPlantSchema>;
@@ -18,6 +24,9 @@ export const createTaskSchema = z
     carePlanId: z.string().min(1),
     type: taskTypeSchema,
     dueDate: z.string().datetime(),
+    priority: z.enum(['low', 'medium', 'high']).optional(),
+    weatherGuidance: z.enum(['none', 'suggest_postpone', 'skip_recommended']).optional(),
+    weatherReason: z.string().trim().max(180).optional(),
     status: taskStatusSchema,
     completedAt: z.string().datetime().optional(),
     createdAt: z.string().datetime(),
@@ -47,6 +56,12 @@ export const updatePlantSchema = z
   .object({
     nickname: z.string().trim().max(60).optional(),
     plantingDate: z.string().datetime().optional(),
+    wateringMode: z.enum(['auto', 'manual']).optional(),
+    wateringFrequencySpringDays: z.number().int().min(1).max(30).optional(),
+    wateringFrequencySummerDays: z.number().int().min(1).max(30).optional(),
+    wateringFrequencyAutumnDays: z.number().int().min(1).max(30).optional(),
+    wateringFrequencyWinterDays: z.number().int().min(1).max(30).optional(),
+    rainAlertLevel: z.enum(['low', 'medium', 'high']).optional(),
     healthStatus: z.enum(['Healthy', 'Needs attention', 'At risk']).optional(),
     healthScore: z.number().min(0).max(100).optional(),
   })

@@ -15,6 +15,12 @@ service cloud.firestore {
         'plantTypeId',
         'nickname',
         'plantingDate',
+        'wateringMode',
+        'wateringFrequencySpringDays',
+        'wateringFrequencySummerDays',
+        'wateringFrequencyAutumnDays',
+        'wateringFrequencyWinterDays',
+        'rainAlertLevel',
         'healthStatus',
         'healthScore',
         'createdAt',
@@ -27,6 +33,34 @@ service cloud.firestore {
         && request.resource.data.userId == uid
         && request.resource.data.plantTypeId is string
         && request.resource.data.plantingDate is timestamp
+        && (
+          !('wateringMode' in request.resource.data)
+          || request.resource.data.wateringMode in ['auto', 'manual']
+        )
+        && (
+          !('wateringFrequencySpringDays' in request.resource.data)
+          || request.resource.data.wateringFrequencySpringDays == null
+          || request.resource.data.wateringFrequencySpringDays is number
+        )
+        && (
+          !('wateringFrequencySummerDays' in request.resource.data)
+          || request.resource.data.wateringFrequencySummerDays == null
+          || request.resource.data.wateringFrequencySummerDays is number
+        )
+        && (
+          !('wateringFrequencyAutumnDays' in request.resource.data)
+          || request.resource.data.wateringFrequencyAutumnDays == null
+          || request.resource.data.wateringFrequencyAutumnDays is number
+        )
+        && (
+          !('wateringFrequencyWinterDays' in request.resource.data)
+          || request.resource.data.wateringFrequencyWinterDays == null
+          || request.resource.data.wateringFrequencyWinterDays is number
+        )
+        && (
+          !('rainAlertLevel' in request.resource.data)
+          || request.resource.data.rainAlertLevel in ['low', 'medium', 'high']
+        )
         && request.resource.data.healthStatus in ['Healthy', 'Needs attention', 'At risk']
         && request.resource.data.healthScore is number;
     }
@@ -38,6 +72,9 @@ service cloud.firestore {
         'carePlanId',
         'type',
         'dueDate',
+        'priority',
+        'weatherGuidance',
+        'weatherReason',
         'status',
         'completedAt',
         'createdAt',
@@ -49,6 +86,19 @@ service cloud.firestore {
       return hasOnlyTaskKeys()
         && request.resource.data.userId == uid
         && request.resource.data.type in ['watering', 'harvest', 'monitoring']
+        && (
+          !('priority' in request.resource.data)
+          || request.resource.data.priority in ['low', 'medium', 'high']
+        )
+        && (
+          !('weatherGuidance' in request.resource.data)
+          || request.resource.data.weatherGuidance in ['none', 'suggest_postpone', 'skip_recommended']
+        )
+        && (
+          !('weatherReason' in request.resource.data)
+          || request.resource.data.weatherReason == null
+          || request.resource.data.weatherReason is string
+        )
         && request.resource.data.status in ['pending', 'completed', 'skipped']
         && request.resource.data.dueDate is timestamp
         && (

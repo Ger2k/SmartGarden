@@ -40,6 +40,16 @@ export async function listPlants(userId: string): Promise<Plant[]> {
       plantTypeId: String(data.plantTypeId ?? ''),
       nickname: typeof data.nickname === 'string' ? data.nickname : undefined,
       plantingDate: toIso(data.plantingDate),
+      wateringMode: data.wateringMode as Plant['wateringMode'],
+      wateringFrequencySpringDays:
+        typeof data.wateringFrequencySpringDays === 'number' ? data.wateringFrequencySpringDays : undefined,
+      wateringFrequencySummerDays:
+        typeof data.wateringFrequencySummerDays === 'number' ? data.wateringFrequencySummerDays : undefined,
+      wateringFrequencyAutumnDays:
+        typeof data.wateringFrequencyAutumnDays === 'number' ? data.wateringFrequencyAutumnDays : undefined,
+      wateringFrequencyWinterDays:
+        typeof data.wateringFrequencyWinterDays === 'number' ? data.wateringFrequencyWinterDays : undefined,
+      rainAlertLevel: data.rainAlertLevel as Plant['rainAlertLevel'],
       healthStatus: data.healthStatus as Plant['healthStatus'],
       healthScore: typeof data.healthScore === 'number' ? data.healthScore : undefined,
       createdAt: toIso(data.createdAt),
@@ -62,6 +72,12 @@ export async function createPlant(userId: string, input: CreatePlantInput): Prom
     plantTypeId: parsed.data.plantTypeId,
     nickname: parsed.data.nickname || '',
     plantingDate,
+    wateringMode: parsed.data.wateringMode,
+    wateringFrequencySpringDays: parsed.data.wateringFrequencySpringDays ?? null,
+    wateringFrequencySummerDays: parsed.data.wateringFrequencySummerDays ?? null,
+    wateringFrequencyAutumnDays: parsed.data.wateringFrequencyAutumnDays ?? null,
+    wateringFrequencyWinterDays: parsed.data.wateringFrequencyWinterDays ?? null,
+    rainAlertLevel: parsed.data.rainAlertLevel,
     healthStatus: 'Healthy',
     healthScore: 85,
     createdAt: serverTimestamp(),
@@ -77,7 +93,12 @@ export async function updatePlant(userId: string, plantId: string, patch: Partia
 
   const firestore = getDbOrThrow();
   const ref = doc(firestore, 'users', userId, 'plants', plantId);
-  const patchForDb: Record<string, unknown> = { ...parsed.data };
+  const patchForDb: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(parsed.data)) {
+    if (value !== undefined) {
+      patchForDb[key] = value;
+    }
+  }
   if (parsed.data.plantingDate) {
     patchForDb.plantingDate = Timestamp.fromDate(new Date(parsed.data.plantingDate));
   }
