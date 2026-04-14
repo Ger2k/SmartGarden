@@ -50,22 +50,165 @@ Aplicacion web para gestionar huertos y jardines de forma inteligente: seguimien
 - Tests unitarios para el generador de planes de cuidado.
 - Configuracion para despliegue SSR en Netlify.
 
-## Roadmap (proximas implementaciones)
+## Estado real del proyecto (auditado)
 
-### Prioridad alta
-- Notificaciones y recordatorios (in-app y/o email/push).
-- Alertas proactivas de riesgo (plagas, estres hidrico, tareas criticas vencidas).
-- Mejoras de UX del dashboard con mas contexto accionable.
+Leyenda:
+- Completado: usable hoy en flujo principal.
+- Parcial: existe base tecnica pero faltan piezas para considerarlo cerrado.
+- Pendiente: aun no implementado.
 
-### Prioridad media
-- Estadisticas historicas y tendencias por planta (productividad/salud).
-- Configuracion avanzada de reglas por especie y temporada.
-- Exportacion de tareas e historial (CSV/PDF).
+### Estado funcional por area
 
-### Prioridad baja
-- Modo colaborativo para varios usuarios por jardin.
-- Adjuntos multimedia por planta (fotos de seguimiento).
-- Internacionalizacion completa (ES/EN) con selector de idioma.
+1. Base del producto y arquitectura: Completado.
+- Astro + React + Tailwind en SSR.
+- Rutas principales y estructura por features.
+
+2. Autenticacion y sesion: Parcial.
+- Login Google y modo demo funcionando.
+- Middleware de rutas protegidas activo.
+- Falta endurecer seguridad de sesion (cookie `sg_auth` es simple, sin validacion server-side del token).
+
+3. Base de datos por usuario: Parcial.
+- Firestore por usuario en `users/{uid}/plants|tasks|carePlans`.
+- Reglas de seguridad incluidas.
+- Faltan pruebas de reglas y cierre de edge cases de integridad en actualizaciones complejas.
+
+4. Clima (OpenWeather): Parcial.
+- Endpoint `/api/weather/forecast` con normalizacion y fallback.
+- Integrado en dashboard y generador de plan.
+- Falta observabilidad (logs/metricas), control de cuota/rate-limit y estrategia de cache mas robusta.
+
+5. Operacion diaria (plantas, tareas, calendario): Parcial.
+- Alta/baja de plantas, tareas del dia, historial y calendario mes/semana.
+- Falta edicion completa de plantas en UI y mejoras de UX en errores/carga.
+
+6. Plan inteligente y analitica basica: Parcial.
+- Generador de plan con lluvia/tendencia de calor + insights.
+- Analitica por planta (salud, tendencia, cumplimiento, atrasos).
+- Faltan tests de integracion end-to-end y refinamiento de algoritmo con datos historicos reales.
+
+7. Alertas y notificaciones: Pendiente.
+
+8. Colaboracion, exportaciones y multimedia: Pendiente.
+
+## Plan de desarrollo paso a paso (fase por fase)
+
+Objetivo: avanzar por incrementos pequenos, verificables y con puntos de ajuste antes de pasar a la siguiente fase.
+
+### Fase 0 - Baseline de calidad (1-2 dias)
+Objetivo:
+- Estabilizar entorno de desarrollo para evitar falsos errores.
+
+Tareas:
+- Documentar y automatizar limpieza de cache Vite cuando aparezca conflicto local.
+- Agregar script de chequeo rapido (`test:run + build`) como puerta de salida de cada fase.
+
+Verificacion:
+- `npm run test:run` en verde.
+- `npm run build` en verde.
+- Sin errores bloqueantes al abrir login, dashboard y calendario.
+
+### Fase 1 - Seguridad de autenticacion y sesion (2-3 dias)
+Objetivo:
+- Pasar de proteccion por cookie simple a validacion robusta de sesion.
+
+Tareas:
+- Validar sesion en servidor usando token real de Firebase cuando exista.
+- Mantener modo demo aislado y claramente identificado (solo desarrollo).
+- Unificar manejo de expiracion de sesion y logout seguro.
+
+Verificacion:
+- Rutas protegidas no accesibles sin sesion valida.
+- No se puede forzar acceso solo escribiendo cookie manual.
+- Login/logout consistentes en refresh y navegacion directa.
+
+### Fase 2 - Cierre de datos por usuario (2-3 dias)
+Objetivo:
+- Endurecer persistencia y reglas para operaciones reales.
+
+Tareas:
+- Agregar tests de reglas Firestore (lectura/escritura por usuario).
+- Revisar constraints de campos opcionales (por ejemplo `completedAt` y estados).
+- Definir estrategia de migracion de datos demo a Firebase (si aplica).
+
+Verificacion:
+- Usuario A no puede leer/escribir datos de usuario B.
+- Operaciones CRUD validas pasan; payloads invalidos fallan con error controlado.
+- Sin corrupcion de tipos fecha/estado en lectura y escritura.
+
+### Fase 3 - Clima confiable y observable (2-3 dias)
+Objetivo:
+- Hacer que integracion de clima sea predecible en produccion.
+
+Tareas:
+- Mejorar cache de pronostico (TTL y claves por coordenada).
+- Registrar fallos de API y fallback usados.
+- Ajustar manejo de errores de UI para diferenciar datos reales vs fallback.
+
+Verificacion:
+- El panel sigue operativo aun con API de clima caida.
+- Se identifica visualmente cuando el dato es fallback.
+- Tiempo de respuesta estable en dashboard.
+
+### Fase 4 - UX operativa (plantas/tareas/calendario) (3-4 dias)
+Objetivo:
+- Completar funcionalidades base de uso diario sin huecos.
+
+Tareas:
+- Implementar edicion de plantas en UI.
+- Mejorar filtros de tareas (hoy, vencidas, completadas).
+- Pulir calendario (acciones directas desde detalle del dia).
+
+Verificacion:
+- CRUD completo de plantas desde UI.
+- Flujo diario se realiza sin salir de dashboard/calendario.
+- Errores visibles y recuperables por usuario.
+
+### Fase 5 - Inteligencia y analitica v2 (3-5 dias)
+Objetivo:
+- Convertir analitica actual en herramienta de decision.
+
+Tareas:
+- Analitica por periodo (7/30 dias).
+- Mini series de salud por planta.
+- Alertas de riesgo: tendencia a la baja + tareas atrasadas.
+
+Verificacion:
+- El usuario puede detectar que planta requiere accion en menos de 10 segundos.
+- Las alertas disparan solo con reglas explicables.
+
+### Fase 6 - Notificaciones y recordatorios (3-4 dias)
+Objetivo:
+- Cerrar el ciclo de accion fuera de la pantalla principal.
+
+Tareas:
+- Sistema inicial in-app de recordatorios.
+- Preferencias por usuario (horario/frecuencia).
+- Base para email/push posterior.
+
+Verificacion:
+- Recordatorios visibles y no duplicados.
+- Se pueden activar/desactivar por usuario.
+
+### Fase 7 - Hardening final y release (2-3 dias)
+Objetivo:
+- Preparar una release estable y medible.
+
+Tareas:
+- QA de regresion en flujos criticos.
+- Checklist de despliegue y variables de entorno.
+- Actualizar documentacion final y roadmap siguiente.
+
+Verificacion:
+- Smoke test completo en entorno de despliegue.
+- Sin errores criticos abiertos.
+
+## Mecanica de trabajo por fase
+
+- Implementar solo alcance de la fase actual.
+- Ejecutar verificacion tecnica (`test:run`, `build`) y verificacion funcional manual.
+- Registrar hallazgos (errores, riesgos, ajustes).
+- Ajustar la fase antes de abrir la siguiente.
 
 ## Requisitos
 
@@ -97,6 +240,28 @@ Todos los comandos se ejecutan en la raiz del proyecto:
 - `npm run preview`: previsualiza build local.
 - `npm run test`: ejecuta tests en modo watch.
 - `npm run test:run`: ejecuta tests una vez.
+- `npm run clean:vite`: limpia cache local de Vite (`node_modules/.vite`).
+- `npm run verify`: ejecuta validacion rapida (`test:run` + `build`).
+
+## Protocolo Fase 0 (baseline de calidad)
+
+Ejecutar siempre antes de iniciar una fase nueva o despues de fixes grandes.
+
+1. Limpiar estado local de bundler si hubo recargas inestables:
+- `npm run clean:vite`
+
+2. Verificar salud tecnica minima:
+- `npm run verify`
+
+3. Smoke test manual corto:
+- Abrir `/login` y comprobar que renderiza correctamente.
+- Entrar en modo demo y abrir `/dashboard`.
+- Abrir `/calendar` y confirmar que carga sin error.
+
+Criterio de salida de Fase 0:
+- Verificacion tecnica en verde.
+- Sin errores bloqueantes visibles en login/dashboard/calendar.
+- Solo entonces iniciar la siguiente fase del plan.
 
 ## Estructura principal
 

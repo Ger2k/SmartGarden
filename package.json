@@ -11,7 +11,9 @@
     "preview": "astro preview",
     "astro": "astro",
     "test": "vitest",
-    "test:run": "vitest run"
+    "test:run": "vitest run",
+    "clean:vite": "node -e \"const fs=require('fs');fs.rmSync('node_modules/.vite',{recursive:true,force:true});console.log('node_modules/.vite cleaned');\"",
+    "verify": "npm run test:run && npm run build"
   },
   "dependencies": {
     "@astrojs/netlify": "^7.0.6",
