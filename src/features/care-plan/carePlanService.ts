@@ -45,3 +45,13 @@ export async function getLatestCarePlan(userId: string, plantId: string): Promis
 
   return match ?? null;
 }
+
+export async function listCarePlans(userId: string): Promise<CarePlan[]> {
+  if (!db) {
+    return readDemoPlans(userId).sort((a, b) => (a.generatedAt < b.generatedAt ? 1 : -1));
+  }
+
+  const ref = collection(db, 'users', userId, 'carePlans');
+  const snapshot = await getDocs(query(ref, orderBy('generatedAt', 'desc'), limit(200)));
+  return snapshot.docs.map((item) => item.data() as CarePlan);
+}

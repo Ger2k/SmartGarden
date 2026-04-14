@@ -5,7 +5,7 @@ import { usePlants } from '../../hooks/usePlants';
 import { useTasks } from '../../hooks/useTasks';
 import { useWeather } from '../../hooks/useWeather';
 import { useGeolocation } from '../../hooks/useGeolocation';
-import { saveCarePlan } from '../../features/care-plan/carePlanService';
+import { listCarePlans, saveCarePlan } from '../../features/care-plan/carePlanService';
 import { createTasks } from '../../features/tasks/taskService';
 import AppShell from '../common/AppShell';
 import DashboardOverview from './DashboardOverview';
@@ -13,18 +13,32 @@ import DailyTaskList from '../tasks/DailyTaskList';
 import TaskHistoryList from '../tasks/TaskHistoryList';
 import PlantManager from '../plants/PlantManager';
 import WeatherCard from './WeatherCard';
+import PlantAnalytics from './PlantAnalytics';
 
 export default function DashboardPage() {
   const { user, loading, signOut } = useAuth();
   const { plants } = usePlants(user?.uid);
   const { tasks, dailyTasks, complete, skip, refresh } = useTasks(user?.uid);
   const [latestPlan, setLatestPlan] = useState<CarePlan | undefined>(undefined);
+  const [carePlans, setCarePlans] = useState<CarePlan[]>([]);
   const [generatingPlan, setGeneratingPlan] = useState(false);
   const { lat, lon, error: geoError } = useGeolocation();
   const { weather, loading: weatherLoading, error: weatherError } = useWeather(lat, lon);
 
   useEffect(() => {
     setLatestPlan(undefined);
+    setCarePlans([]);
+  }, [user?.uid]);
+
+  useEffect(() => {
+    if (!user?.uid) return;
+
+    const loadPlans = async () => {
+      const plans = await listCarePlans(user.uid);
+      setCarePlans(plans);
+    };
+
+    void loadPlans();
   }, [user?.uid]);
 
   const handleGeneratePlan = async () => {
@@ -50,6 +64,7 @@ export default function DashboardPage() {
       await saveCarePlan(payload.plan);
       await createTasks(payload.tasks);
       setLatestPlan(payload.plan);
+      setCarePlans((current) => [payload.plan, ...current]);
       await refresh();
     };
 
@@ -87,6 +102,10 @@ export default function DashboardPage() {
       {geoError ? <p className="mb-4 text-sm text-amber-700">{geoError}</p> : null}
 
       <DashboardOverview plants={plants} dailyTasks={dailyTasks} latestPlan={latestPlan} />
+
+      <div className="mt-4">
+        <PlantAnalytics plants={plants} tasks={tasks} carePlans={carePlans} />
+      </div>
 
       <div className="mt-4 grid gap-4 md:grid-cols-2">
         <WeatherCard weather={weather} loading={weatherLoading} error={weatherError} />
