@@ -96,8 +96,11 @@ export function useAuth() {
       setFirebaseSessionCookies(idToken);
       setUser(mapFirebaseUser(firebaseUser));
       return true;
-    } catch {
-      setError('No se pudo iniciar sesion con Google. Si aun no configuraste Firebase, usa el modo demo.');
+    } catch (error) {
+      const maybeError = error as { code?: string; message?: string };
+      const code = maybeError?.code ? ` (${maybeError.code})` : '';
+      const detail = maybeError?.message ? ` ${maybeError.message}` : '';
+      setError(`No se pudo iniciar sesion con Google${code}.${detail} Si aun no configuraste Firebase, usa el modo demo.`);
       return false;
     }
   };
