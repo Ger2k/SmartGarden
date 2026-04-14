@@ -9,7 +9,7 @@ import {
 import { afterAll, beforeAll, beforeEach, describe, it } from 'vitest';
 import { doc, getDoc, setDoc } from 'firebase/firestore';
 
-const PROJECT_ID = 'demo-smart-garden';
+const PROJECT_ID = 'smart-garden-rules';
 const emulatorHost = process.env.FIRESTORE_EMULATOR_HOST ?? '127.0.0.1:8080';
 const [FIRESTORE_HOST, FIRESTORE_PORT_RAW] = emulatorHost.split(':');
 const FIRESTORE_PORT = Number(FIRESTORE_PORT_RAW || 8080);

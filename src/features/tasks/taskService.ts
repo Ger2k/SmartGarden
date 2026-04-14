@@ -13,30 +13,11 @@ import { db } from '../../services/firebase';
 import type { Task } from '../../types/domain';
 import { createTaskSchema } from '../../utils/validation';
 
-function isDemoUser(userId: string): boolean {
-  return userId === 'demo-user';
-}
-
-function demoTasksKey(userId: string): string {
-  return `sg_demo_tasks_${userId}`;
-}
-
-function readDemoTasks(userId: string): Task[] {
-  const raw = localStorage.getItem(demoTasksKey(userId));
-  if (!raw) return [];
-  try {
-    return JSON.parse(raw) as Task[];
-  } catch {
-    return [];
+function getDbOrThrow() {
+  if (!db) {
+    throw new Error('Firestore no esta configurado. Revisa variables de entorno de Firebase.');
   }
-}
-
-function writeDemoTasks(userId: string, tasks: Task[]) {
-  localStorage.setItem(demoTasksKey(userId), JSON.stringify(tasks));
-}
-
-function makeId(prefix: string): string {
-  return `${prefix}_${Math.random().toString(36).slice(2, 10)}`;
+  return db;
 }
 
 function toIso(value: unknown): string {
@@ -46,11 +27,8 @@ function toIso(value: unknown): string {
 }
 
 export async function listTasks(userId: string): Promise<Task[]> {
-  if (!db || isDemoUser(userId)) {
-    return readDemoTasks(userId).sort((a, b) => (a.dueDate > b.dueDate ? 1 : -1));
-  }
-
-  const ref = collection(db, 'users', userId, 'tasks');
+  const firestore = getDbOrThrow();
+  const ref = collection(firestore, 'users', userId, 'tasks');
   const snapshot = await getDocs(query(ref, orderBy('dueDate', 'asc')));
 
   return snapshot.docs.map((item) => {
@@ -76,14 +54,8 @@ export async function createTask(task: Omit<Task, 'id'>): Promise<void> {
     throw new Error(`Task payload invalido: ${parsed.error.issues[0]?.message ?? 'error de validacion'}`);
   }
 
-  if (!db || isDemoUser(parsed.data.userId)) {
-    const tasks = readDemoTasks(parsed.data.userId);
-    const next: Task = { ...parsed.data, id: makeId('task') };
-    writeDemoTasks(parsed.data.userId, [...tasks, next]);
-    return;
-  }
-
-  const ref = collection(db, 'users', parsed.data.userId, 'tasks');
+  const firestore = getDbOrThrow();
+  const ref = collection(firestore, 'users', parsed.data.userId, 'tasks');
   const dueDate = Timestamp.fromDate(new Date(parsed.data.dueDate));
   await addDoc(ref, {
     ...parsed.data,
@@ -99,17 +71,8 @@ export async function createTasks(tasks: Array<Omit<Task, 'id'>>): Promise<void>
 }
 
 export async function completeTask(userId: string, taskId: string): Promise<void> {
-  if (!db || isDemoUser(userId)) {
-    const tasks = readDemoTasks(userId).map((task) =>
-      task.id === taskId
-        ? { ...task, status: 'completed', completedAt: new Date().toISOString(), updatedAt: new Date().toISOString() }
-        : task
-    );
-    writeDemoTasks(userId, tasks);
-    return;
-  }
-
-  const ref = doc(db, 'users', userId, 'tasks', taskId);
+  const firestore = getDbOrThrow();
+  const ref = doc(firestore, 'users', userId, 'tasks', taskId);
   await updateDoc(ref, {
     status: 'completed',
     completedAt: Timestamp.now(),
@@ -118,15 +81,8 @@ export async function completeTask(userId: string, taskId: string): Promise<void
 }
 
 export async function skipTask(userId: string, taskId: string): Promise<void> {
-  if (!db || isDemoUser(userId)) {
-    const tasks = readDemoTasks(userId).map((task) =>
-      task.id === taskId ? { ...task, status: 'skipped', updatedAt: new Date().toISOString() } : task
-    );
-    writeDemoTasks(userId, tasks);
-    return;
-  }
-
-  const ref = doc(db, 'users', userId, 'tasks', taskId);
+  const firestore = getDbOrThrow();
+  const ref = doc(firestore, 'users', userId, 'tasks', taskId);
   await updateDoc(ref, {
     status: 'skipped',
     updatedAt: serverTimestamp(),

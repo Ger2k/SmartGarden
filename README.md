@@ -6,7 +6,6 @@ Aplicacion web para gestionar huertos y jardines de forma inteligente: seguimien
 
 ### 1) Acceso y sesion
 - Iniciar sesion con Google (Firebase Auth).
-- Entrar en modo demo aunque Firebase no este configurado.
 - Navegar entre secciones protegidas (panel, plantas, tareas, calendario).
 
 ### 2) Panel principal
@@ -36,15 +35,15 @@ Aplicacion web para gestionar huertos y jardines de forma inteligente: seguimien
 - Seleccion de dia para ver detalle de tareas.
 - Navegacion por fechas para planificacion operativa.
 
-### 7) Resiliencia en modo demo
-- Si Firestore/Auth no estan disponibles, la app sigue funcionando en modo local.
-- Se guarda informacion de demo en localStorage (plantas, tareas y planes).
+### 7) Resiliencia operativa
+- Validacion de sesion en rutas protegidas con token de Firebase.
+- Mensajes de error visibles para incidencias de configuracion o permisos.
 
 ## Funcionalidades implementadas (tecnico)
 
 - Frontend con Astro + React + Tailwind.
 - Rutas de aplicacion: inicio, login, dashboard, plantas, tareas y calendario.
-- Integracion de Firebase Auth + Firestore (con fallback local para demo).
+- Integracion de Firebase Auth + Firestore.
 - Integracion de clima via Open-Meteo.
 - Reglas de seguridad de Firestore incluidas en el repo.
 - Tests unitarios para el generador de planes de cuidado.
@@ -64,7 +63,7 @@ Leyenda:
 - Rutas principales y estructura por features.
 
 2. Autenticacion y sesion: Parcial.
-- Login Google y modo demo funcionando.
+- Login Google funcionando.
 - Middleware de rutas protegidas activo.
 - Validacion server-side de sesion Firebase implementada en middleware.
 - Pendiente mover validacion a flujo con Admin SDK/session cookies para entorno productivo estricto.
@@ -117,7 +116,6 @@ Objetivo:
 
 Tareas:
 - Validar sesion en servidor usando token real de Firebase cuando exista.
-- Mantener modo demo aislado y claramente identificado (solo desarrollo).
 - Unificar manejo de expiracion de sesion y logout seguro.
 
 Verificacion:
@@ -132,7 +130,6 @@ Objetivo:
 Tareas:
 - Agregar tests de reglas Firestore (lectura/escritura por usuario).
 - Revisar constraints de campos opcionales (por ejemplo `completedAt` y estados).
-- Definir estrategia de migracion de datos demo a Firebase (si aplica).
 
 Verificacion:
 - Usuario A no puede leer/escribir datos de usuario B.
@@ -230,7 +227,7 @@ Variables disponibles:
 - `PUBLIC_FIREBASE_MESSAGING_SENDER_ID`
 - `PUBLIC_FIREBASE_APP_ID`
 
-Nota: si faltan variables de Firebase, la app permite uso en modo demo con almacenamiento local.
+Nota: si faltan variables de Firebase, la app no podra autenticarse ni acceder a Firestore.
 
 ## Scripts
 
@@ -263,7 +260,7 @@ Ejecutar siempre antes de iniciar una fase nueva o despues de fixes grandes.
 
 3. Smoke test manual corto:
 - Abrir `/login` y comprobar que renderiza correctamente.
-- Entrar en modo demo y abrir `/dashboard`.
+- Iniciar sesion con Google y abrir `/dashboard`.
 - Abrir `/calendar` y confirmar que carga sin error.
 
 Criterio de salida de Fase 0:

@@ -2,13 +2,11 @@ import { useEffect, useState } from 'react';
 import type { User } from 'firebase/auth';
 import { loginWithGoogle, logout, subscribeAuth } from '../features/auth/authService';
 
-const DEMO_USER_KEY = 'sg_demo_user';
-
 export type AuthUser = {
   uid: string;
   displayName?: string;
   email?: string;
-  provider: 'firebase' | 'demo';
+  provider: 'firebase';
 };
 
 function setCookie(name: string, value: string, maxAgeSeconds: number) {
@@ -22,19 +20,11 @@ function clearCookie(name: string) {
 function clearSessionCookies() {
   clearCookie('sg_auth_mode');
   clearCookie('sg_id_token');
-  clearCookie('sg_demo_uid');
-}
-
-function setDemoSessionCookies(uid: string) {
-  setCookie('sg_auth_mode', 'demo', 86400);
-  setCookie('sg_demo_uid', uid, 86400);
-  clearCookie('sg_id_token');
 }
 
 function setFirebaseSessionCookies(idToken: string) {
   setCookie('sg_auth_mode', 'firebase', 3600);
   setCookie('sg_id_token', idToken, 3600);
-  clearCookie('sg_demo_uid');
 }
 
 function mapFirebaseUser(user: User): AuthUser {
@@ -52,27 +42,13 @@ export function useAuth() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const demoRaw = localStorage.getItem(DEMO_USER_KEY);
-    let demoUser: AuthUser | null = null;
-    if (demoRaw) {
-      try {
-        demoUser = JSON.parse(demoRaw) as AuthUser;
-      } catch {
-        localStorage.removeItem(DEMO_USER_KEY);
-      }
-    }
-
     try {
       const unsubscribe = subscribeAuth((nextUser) => {
         const syncAuthState = async () => {
           if (nextUser) {
             const idToken = await nextUser.getIdToken();
-            localStorage.removeItem(DEMO_USER_KEY);
             setFirebaseSessionCookies(idToken);
             setUser(mapFirebaseUser(nextUser));
-          } else if (demoUser) {
-            setDemoSessionCookies(demoUser.uid);
-            setUser(demoUser);
           } else {
             clearSessionCookies();
             setUser(null);
@@ -101,37 +77,19 @@ export function useAuth() {
       const maybeError = error as { code?: string; message?: string };
       const code = maybeError?.code ? ` (${maybeError.code})` : '';
       const detail = maybeError?.message ? ` ${maybeError.message}` : '';
-      setError(`No se pudo iniciar sesion con Google${code}.${detail} Si aun no configuraste Firebase, usa el modo demo.`);
+      setError(`No se pudo iniciar sesion con Google${code}.${detail}`);
       return false;
     }
   };
 
-  const signInDemo = () => {
-    const demoUser: AuthUser = {
-      uid: 'demo-user',
-      displayName: 'Usuario demo',
-      email: 'demo@smartgarden.local',
-      provider: 'demo',
-    };
-    localStorage.setItem(DEMO_USER_KEY, JSON.stringify(demoUser));
-    setDemoSessionCookies(demoUser.uid);
-    setUser(demoUser);
-    setLoading(false);
-    setError(null);
-    return true;
-  };
-
   const signOut = async () => {
-    localStorage.removeItem(DEMO_USER_KEY);
     clearSessionCookies();
     setUser(null);
 
     try {
       await logout();
-    } catch {
-      // No-op: demo mode does not need Firebase logout.
-    }
+    } catch {}
   };
 
-  return { user, loading, error, signIn, signInDemo, signOut };
+  return { user, loading, error, signIn, signOut };
 }

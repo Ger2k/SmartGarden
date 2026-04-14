@@ -13,7 +13,7 @@
     "test": "vitest --exclude tests/rules/**",
     "test:run": "vitest run --exclude tests/rules/**",
     "test:rules:run": "vitest run tests/rules/firestore.rules.test.ts",
-    "test:rules": "firebase emulators:exec --project demo-smart-garden --only firestore \"npm run test:rules:run\"",
+    "test:rules": "firebase emulators:exec --project smart-garden-rules --only firestore \"npm run test:rules:run\"",
     "clean:vite": "node -e \"const fs=require('fs');fs.rmSync('node_modules/.vite',{recursive:true,force:true});console.log('node_modules/.vite cleaned');\"",
     "verify": "npm run test:run && npm run build",
     "verify:full": "npm run verify && npm run test:rules"

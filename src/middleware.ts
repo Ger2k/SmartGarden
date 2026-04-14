@@ -26,15 +26,6 @@ export const onRequest = defineMiddleware(async ({ url, cookies, redirect }, nex
 
   const authMode = cookies.get('sg_auth_mode')?.value;
 
-  if (authMode === 'demo') {
-    const hasDemoUser = Boolean(cookies.get('sg_demo_uid')?.value);
-    const demoEnabled = import.meta.env.DEV || import.meta.env.PUBLIC_ENABLE_DEMO === 'true';
-    if (demoEnabled && hasDemoUser) {
-      return next();
-    }
-    return redirect('/login');
-  }
-
   if (authMode === 'firebase') {
     const idToken = cookies.get('sg_id_token')?.value ?? '';
     const isValid = await verifyFirebaseIdToken(idToken, import.meta.env.PUBLIC_FIREBASE_API_KEY);
