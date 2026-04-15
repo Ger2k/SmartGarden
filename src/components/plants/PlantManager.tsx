@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import dayjs from 'dayjs';
 import { useAuth } from '../../hooks/useAuth';
 import { usePlants } from '../../hooks/usePlants';
@@ -22,7 +22,7 @@ export default function PlantManager({ onPlantChange }: PlantManagerProps) {
   const [newPerenualSpeciesId, setNewPerenualSpeciesId] = useState<number | undefined>(undefined);
   const [plantSearch, setPlantSearch] = useState('');
   const [plantOptions, setPlantOptions] = useState<PlantOption[]>([]);
-  const [plantSource, setPlantSource] = useState<'perenual' | 'local' | 'local-fallback'>('local');
+  const [plantSource, setPlantSource] = useState<'perenual' | 'perenual-similar' | 'local' | 'local-similar' | 'local-fallback'>('local');
   const [nickname, setNickname] = useState('');
   const [newPlantingDate, setNewPlantingDate] = useState(dayjs().format('YYYY-MM-DD'));
   const [newWateringMode, setNewWateringMode] = useState<Plant['wateringMode']>('auto');
@@ -100,7 +100,10 @@ export default function PlantManager({ onPlantChange }: PlantManagerProps) {
             signal: controller.signal,
           });
           if (!response.ok) return;
-          const payload = (await response.json()) as { options?: PlantOption[]; source?: 'perenual' | 'local' | 'local-fallback' };
+          const payload = (await response.json()) as {
+            options?: PlantOption[];
+            source?: 'perenual' | 'perenual-similar' | 'local' | 'local-similar' | 'local-fallback';
+          };
           setPlantOptions(payload.options ?? []);
           setPlantSource(payload.source ?? 'local');
           if (!plantTypeId && (payload.options?.length ?? 0) > 0) {
@@ -169,6 +172,25 @@ export default function PlantManager({ onPlantChange }: PlantManagerProps) {
     await onPlantChange?.();
   };
 
+  const exactMatch = useMemo(
+    () => plantOptions.find((option) => option.name.toLowerCase() === plantSearch.trim().toLowerCase()),
+    [plantOptions, plantSearch]
+  );
+
+  const suggestedOptions = useMemo(() => {
+    if (!plantSearch.trim() || exactMatch) return [];
+    return plantOptions.slice(0, 4);
+  }, [plantOptions, plantSearch, exactMatch]);
+
+  const sourceLabel =
+    plantSource === 'perenual'
+      ? 'Perenual'
+      : plantSource === 'perenual-similar'
+        ? 'Perenual (sugerencias parecidas)'
+        : plantSource === 'local-similar'
+          ? 'Catalogo local (sugerencias parecidas)'
+          : 'Catalogo local';
+
   return (
     <section className="rounded-xl border border-emerald-200 bg-white p-4">
       <h3 className="text-lg font-semibold">Mis plantas</h3>
@@ -223,8 +245,30 @@ export default function PlantManager({ onPlantChange }: PlantManagerProps) {
       </div>
 
       <p className="mt-1 text-xs text-slate-500">
-        Fuente de catalogo: {plantSource === 'perenual' ? 'Perenual' : 'Catalogo local'}
+        Fuente de catalogo: {sourceLabel}
       </p>
+
+      {suggestedOptions.length > 0 ? (
+        <div className="mt-2 rounded-lg border border-amber-200 bg-amber-50 p-2 text-sm text-amber-900">
+          <p className="mb-2">No encontramos una coincidencia exacta. Quizas quisiste decir:</p>
+          <div className="flex flex-wrap gap-2">
+            {suggestedOptions.map((option) => (
+              <button
+                key={`${option.plantTypeId}-${option.perenualSpeciesId ?? 'local'}-suggestion`}
+                type="button"
+                onClick={() => {
+                  setPlantSearch(option.name);
+                  setPlantTypeId(option.plantTypeId);
+                  setNewPerenualSpeciesId(option.perenualSpeciesId);
+                }}
+                className="rounded-full border border-amber-300 bg-white px-3 py-1 text-xs font-medium text-amber-900"
+              >
+                {option.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : null}
 
       <div className="mt-2 grid gap-2 md:grid-cols-3">
         <select
